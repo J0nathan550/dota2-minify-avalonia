@@ -9,14 +9,12 @@
 ```python
 class Api:
     def __init__(self) -> None:
+        self._host_shutdown: Any = None
         self.patch_service = PatchService()
         self.mod_service = ModService()
         self.config_service = ConfigService()
         self.plugin_service = PluginService()
         self.dialog_service = DialogService()
-
-    def set_window(self, window: Any) -> None:
-        self.patch_service.set_window(window)
 
     def start_patch(self) -> Dict[str, Any]:
         return self.patch_service.start_patch()
@@ -37,6 +35,9 @@ class Api:
 
     def get_logs(self) -> List[Dict[str, Any]]:
         return self.patch_service.get_logs()
+
+    def get_downloads(self) -> List[Dict[str, Any]]:
+        return self.patch_service.get_downloads()
 
     def clear_logs(self) -> bool:
         return self.patch_service.clear_logs()
@@ -59,55 +60,6 @@ class Api:
     def get_version(self) -> str:
         return base.VERSION
 
-    @staticmethod
-    def is_portable() -> bool:
-        if not base.FROZEN:
-            return True
-        return not os.path.exists(os.path.join(os.path.dirname(sys.executable), "unins000.exe"))
-
-    def perform_update(self, url: str) -> bool:
-        if not base.is_win or self.is_portable():
-            import webbrowser
-
-            webbrowser.open(base.github_io)
-            return False
-
-        import tempfile
-        import threading
-        import time
-
-        from core import fs, log
-
-        def _update_thread():
-            temp_dir = os.environ.get("TEMP", os.environ.get("TMP", tempfile.gettempdir()))
-            clean_url = url.split("?")[0]
-            installer_name = clean_url.split("/")[-1] or "Minify-Setup.exe"
-            installer_path = os.path.join(temp_dir, installer_name)
-
-            output.add_text(f"Downloading update: {installer_name}...")
-            success = fs.download_file(
-                url=url,
-                target_path=installer_path,
-                name=installer_name,
-                task_id="app-update",
-                emit_progress=True,
-            )
-            if success and os.path.exists(installer_path):
-                time.sleep(2)
-                output.add_text("Launching installer and closing Minify...")
-                try:
-                    os.startfile(installer_path)
-                except Exception as e:
-                    log.write_crashlog(f"Failed to launch installer: {e}")
-                    output.add_text(f"Failed to launch installer: {e}", msg_type="error")
-                finally:
-                    os._exit(0)
-            else:
-                output.add_text("Update download failed.", msg_type="error")
-
-        threading.Thread(target=_update_thread, daemon=True).start()
-        return True
-
     def get_localization(self, lang: str = "en") -> Dict[str, str]:
         return self.config_service.get_localization(lang)
 
@@ -125,6 +77,24 @@ class Api:
 
     def set_game_language(self, lang: str) -> bool:
         return self.config_service.set_game_language(lang)
+
+    def get_steam_status(self) -> Dict[str, Any]:
+        from core import steam
+
+        library = config.get("steam_library", "")
+        dota_found = bool(library) and (
+            os.path.exists(os.path.join(library, base.DOTA_EXECUTABLE_PATH))
+            or os.path.exists(os.path.join(library, base.DOTA_EXECUTABLE_PATH_FALLBACK))
+        )
+        return {"root": steam.ROOT, "library": library, "dota_found": dota_found}
+
+    def set_steam_root(self, path: str) -> bool:
+        "Paths are resolved at import time, the frontend restarts the backend after this succeeds."
+        from core import steam
+
+        steam_root = os.path.normpath(path)
+        config.set("steam_root", steam_root)
+        return steam.find_library_from_vdf(steam_root)
 
     def get_steam_accounts(self) -> List[Dict[str, Any]]:
         return self.config_service.get_steam_accounts()
@@ -146,9 +116,6 @@ class Api:
 
     def get_available_themes(self) -> List[Dict[str, str]]:
         return self.config_service.get_available_themes()
-
-    def get_theme_url(self, theme_name: str | None = None) -> str:
-        return self.config_service.get_theme_url(theme_name)
 
     def get_theme_css(self, theme_name: str | None = None) -> str:
         return self.config_service.get_theme_css(theme_name)
@@ -176,7 +143,12 @@ class Api:
         entries = []
         if backup_dirs:
             backup_dir = backup_dirs[-1]
-            entries.extend(f"{backup_dir.name}/{entry.name}" for entry in sorted(backup_dir.iterdir()))
+            mods_dir = Path(base.mods_dir)
+            entries.extend(
+                f"{backup_dir.name}/{entry.name}"
+                for entry in sorted(backup_dir.iterdir())
+                if not (mods_dir / entry.name).exists()
+            )
         return entries
 
     def import_legacy_mods(self, import_mods: bool = True) -> Dict[str, Any]:
@@ -293,144 +265,14 @@ class Api:
             )
             return False
 
-    def get_plugin_tabs(self) -> List[Dict[str, Any]]:
-        return self.plugin_service.get_tabs(resolve_func=self._resolve_plugin_entry)
-
-    def get_plugin_content(self, plugin_id: str) -> str:
-        return self.plugin_service.get_content(plugin_id)
+    def get_plugins(self) -> List[Dict[str, Any]]:
+        return self.plugin_service.get_plugins()
 
     def get_plugin_localization(self, plugin_id: str, lang: str = "en") -> Dict[str, str]:
         return self.plugin_service.get_localization(plugin_id, lang)
 
-    def _resolve_plugin_entry(self, p_path: str) -> Optional[str]:
-        return self.plugin_service._resolve_plugin_entry(p_path)
-
     def call_plugin_api(self, plugin_id: str, action: str, params: Dict[str, Any] = None) -> Any:
         return self.plugin_service.call_api(plugin_id, action, params)
-```
-
-</details>
-
-## `launch()`
-
-*No documentation available.*
-
-<details open><summary>Source</summary>
-
-```python
-def launch() -> None:
-    if not os.path.isfile(base.dist_index):
-        output.add_text(
-            f"Error: Web UI build file not found at '{base.dist_index}'. Please run 'npm run build' inside Minify/ui/web.",
-            msg_type="error",
-        )
-
-    if base.is_win:
-        os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-gpu")  # #186
-
-    debug_mode = bool(config.get("debug_env"))
-    webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
-    webview.settings["ALLOW_FILE_URLS"] = True
-
-    url = Path(base.dist_index).as_uri()
-
-    states = utils.read_states()
-    window_size = states.get("window_size", {}) if isinstance(states, dict) else {}
-    initial_width = window_size.get("width", 960)
-    initial_height = window_size.get("height", 680)
-
-    if not isinstance(initial_width, int) or initial_width < 700:
-        initial_width = 960
-    if not isinstance(initial_height, int) or initial_height < 500:
-        initial_height = 680
-
-    api = Api()
-    active_theme = config.get("theme", "light")
-    theme_css = api.get_theme_css(active_theme)
-    bg_color = api.config_service.extract_bg_color(theme_css)
-    window = webview.create_window(
-        title=base.TITLE,
-        url=url,
-        js_api=api,
-        width=initial_width,
-        height=initial_height,
-        min_size=(700, 500),
-        resizable=True,
-        background_color=bg_color,
-    )
-
-    def _save_window_size(*args: Any, **kwargs: Any) -> None:
-        w, h = None, None
-        if len(args) >= 2:
-            w, h = args[0], args[1]
-        if w and h and isinstance(w, (int, float)) and isinstance(h, (int, float)):
-            w_int, h_int = int(w), int(h)
-            if w_int >= 700 and h_int >= 500:
-                utils.write_states("window_size", {"width": w_int, "height": h_int})
-
-    window.events.resized += _save_window_size
-
-    # to prevent MSHTML
-    if not is_webview_available():
-        _show_missing_dialog()
-        return
-
-    api.set_window(window)
-    try:
-        webview.start(debug=debug_mode, icon=base.favicon_file)
-    except Exception:
-        if not is_webview_available():
-            _show_missing_dialog()
-            return
-        raise
-```
-
-</details>
-
-## `is_webview_available()`
-
-*No documentation available.*
-
-<details open><summary>Source</summary>
-
-```python
-def is_webview_available() -> bool:
-    if base.is_win:
-        return is_webview2_installed()
-    try:
-        return bool(webview.initialize())
-    except Exception:
-        return False
-```
-
-</details>
-
-## `is_webview2_installed()`
-
-*No documentation available.*
-
-<details open><summary>Source</summary>
-
-```python
-def is_webview2_installed() -> bool:
-    candidate_dirs = [
-        os.path.join(
-            os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), "Microsoft", "EdgeWebView", "Application"
-        ),
-        os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), "Microsoft", "EdgeWebView", "Application"),
-        os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "EdgeWebView", "Application"),
-    ]
-
-    for base_dir in candidate_dirs:
-        if not base_dir or not os.path.isdir(base_dir):
-            continue
-        try:
-            for _, _, files in os.walk(base_dir):
-                if "msedgewebview2.exe" in files:
-                    return True
-        except OSError:
-            pass
-    return False
 ```
 
 </details>

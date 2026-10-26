@@ -4,22 +4,21 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "npm --prefix Minify/ui/web run build"
+      "command": "dotnet build desktop/Minify.Desktop.slnx"
     },
     {
       "label": "run",
       "type": "shell",
-      "command": "uv run Minify"
-    },
-    {
-      "label": "build & run",
-      "type": "shell",
-      "command": "uv run Minify",
-      "dependsOn": ["build"],
+      "command": "dotnet run --project desktop/Minify.Desktop",
       "group": {
         "kind": "build",
         "isDefault": true
       }
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "uv run pytest && dotnet test desktop/Minify.Desktop.slnx"
     },
     {
       "label": "patch",

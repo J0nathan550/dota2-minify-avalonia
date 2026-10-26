@@ -1,14 +1,8 @@
 import os
-import json
 import shutil
-import sys
-import threading
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-import webview
 from core import base, config, constants, fs, output, utils
 
 from ui.services import ConfigService, DialogService, ModService, PatchService, PluginService
@@ -22,17 +16,6 @@ class Api:
         self.config_service = ConfigService()
         self.plugin_service = PluginService()
         self.dialog_service = DialogService()
-
-    def set_window(self, window: Any) -> None:
-        self.patch_service.set_window(window)
-
-    def set_host_shutdown(self, callback: Any) -> None:
-        self._host_shutdown = callback
-
-    def shutdown_host(self) -> bool:
-        if self._host_shutdown:
-            self._host_shutdown()
-        return True
 
     def start_patch(self) -> Dict[str, Any]:
         return self.patch_service.start_patch()
@@ -77,55 +60,6 @@ class Api:
 
     def get_version(self) -> str:
         return base.VERSION
-
-    @staticmethod
-    def is_portable() -> bool:
-        if not base.FROZEN:
-            return True
-        return not os.path.exists(os.path.join(os.path.dirname(sys.executable), "unins000.exe"))
-
-    def perform_update(self, url: str) -> bool:
-        if not base.is_win or self.is_portable():
-            import webbrowser
-
-            webbrowser.open(base.github_io)
-            return False
-
-        import tempfile
-        import threading
-        import time
-
-        from core import fs, log
-
-        def _update_thread():
-            temp_dir = os.environ.get("TEMP", os.environ.get("TMP", tempfile.gettempdir()))
-            clean_url = url.split("?")[0]
-            installer_name = clean_url.split("/")[-1] or "Minify-Setup.exe"
-            installer_path = os.path.join(temp_dir, installer_name)
-
-            output.add_text(f"Downloading update: {installer_name}...")
-            success = fs.download_file(
-                url=url,
-                target_path=installer_path,
-                name=installer_name,
-                task_id="app-update",
-                emit_progress=True,
-            )
-            if success and os.path.exists(installer_path):
-                time.sleep(2)
-                output.add_text("Launching installer and closing Minify...")
-                try:
-                    os.startfile(installer_path)
-                except Exception as e:
-                    log.write_crashlog(f"Failed to launch installer: {e}")
-                    output.add_text(f"Failed to launch installer: {e}", msg_type="error")
-                finally:
-                    os._exit(0)
-            else:
-                output.add_text("Update download failed.", msg_type="error")
-
-        threading.Thread(target=_update_thread, daemon=True).start()
-        return True
 
     def get_localization(self, lang: str = "en") -> Dict[str, str]:
         return self.config_service.get_localization(lang)
@@ -335,217 +269,8 @@ class Api:
     def get_plugins(self) -> List[Dict[str, Any]]:
         return self.plugin_service.get_plugins()
 
-    def get_plugin_tabs(self) -> List[Dict[str, Any]]:
-        return self.plugin_service.get_tabs(resolve_func=self._resolve_plugin_entry)
-
-    def get_plugin_content(self, plugin_id: str) -> str:
-        return self.plugin_service.get_content(plugin_id)
-
     def get_plugin_localization(self, plugin_id: str, lang: str = "en") -> Dict[str, str]:
         return self.plugin_service.get_localization(plugin_id, lang)
 
-    def _resolve_plugin_entry(self, p_path: str) -> Optional[str]:
-        return self.plugin_service._resolve_plugin_entry(p_path)
-
     def call_plugin_api(self, plugin_id: str, action: str, params: Dict[str, Any] = None) -> Any:
         return self.plugin_service.call_api(plugin_id, action, params)
-
-
-def launch(host: bool = False) -> None:
-    if not os.path.isfile(base.dist_index):
-        output.add_text(
-            f"Error: Web UI build file not found at '{base.dist_index}'. Please run 'npm run build' inside Minify/ui/web.",
-            msg_type="error",
-        )
-
-    if base.is_win:
-        os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-gpu")  # #186
-
-    debug_mode = bool(config.get("debug_env"))
-    webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
-    webview.settings["ALLOW_FILE_URLS"] = True
-
-    url = Path(base.dist_index).as_uri()
-
-    states = utils.read_states()
-    window_size = states.get("window_size", {}) if isinstance(states, dict) else {}
-    initial_width = window_size.get("width", 960)
-    initial_height = window_size.get("height", 680)
-
-    if not isinstance(initial_width, int) or initial_width < 700:
-        initial_width = 960
-    if not isinstance(initial_height, int) or initial_height < 500:
-        initial_height = 680
-
-    if host:
-        _open_in_browser()
-        return
-
-    api = Api()
-    active_theme = config.get("theme", "light")
-    theme_css = api.get_theme_css(active_theme)
-    bg_color = api.config_service.extract_bg_color(theme_css)
-    window = webview.create_window(
-        title=base.TITLE,
-        url=url,
-        js_api=api,
-        width=initial_width,
-        height=initial_height,
-        min_size=(700, 500),
-        resizable=True,
-        background_color=bg_color,
-    )
-
-    def _save_window_size(*args: Any, **kwargs: Any) -> None:
-        w, h = None, None
-        if len(args) >= 2:
-            w, h = args[0], args[1]
-        if w and h and isinstance(w, (int, float)) and isinstance(h, (int, float)):
-            w_int, h_int = int(w), int(h)
-            if w_int >= 700 and h_int >= 500:
-                utils.write_states("window_size", {"width": w_int, "height": h_int})
-
-    window.events.resized += _save_window_size
-
-    # to prevent MSHTML
-    if base.is_win and not is_webview2_installed():
-        print("WebView2 not installed, opening in browser...")
-        _open_in_browser()
-        return
-
-    api.set_window(window)
-    try:
-        webview.start(debug=debug_mode, icon=base.favicon_file)
-    except Exception as e:
-        print(f"WebView initialization failed, opening in browser: {e}")
-        _open_in_browser()
-
-
-def _open_in_browser() -> None:
-    import webbrowser
-
-    stop_event = threading.Event()
-    api = Api()
-    server = _start_local_server(os.path.dirname(base.dist_index), api)
-    api.set_host_shutdown(lambda: _request_host_shutdown(stop_event, server))
-    url = f"http://127.0.0.1:{server.server_port}/index.html"
-    if not webbrowser.open(url):
-        _stop_local_server(server)
-        return
-    try:
-        stop_event.wait()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        _stop_local_server(server)
-
-
-def _request_host_shutdown(stop_event: threading.Event, server: ThreadingHTTPServer) -> None:
-    stop_event.set()
-    threading.Thread(target=_stop_local_server, args=(server,), daemon=True).start()
-
-
-def _stop_local_server(server: ThreadingHTTPServer) -> None:
-    server.shutdown()
-    server.server_close()
-    serve_thread = getattr(server, "_serve_thread", None)
-    if serve_thread is not None and serve_thread is not threading.current_thread():
-        serve_thread.join(timeout=5)
-
-
-def _start_local_server(directory: str, api: Api) -> ThreadingHTTPServer:
-    def _host_file_urls(value: Any) -> Any:
-        if isinstance(value, str) and value.startswith("file://"):
-            path = unquote(urlparse(value).path).replace("/", os.sep)
-            if len(path) > 2 and path[0] == os.sep and path[2] == ":":
-                path = path[1:]
-            for root, prefix in ((base.themes_dir, "/themes/"), (base.plugins_dir, "/plugins/")):
-                try:
-                    relative = os.path.relpath(path, root)
-                except ValueError:
-                    continue
-                if not relative.startswith(".."):
-                    return prefix + relative.replace(os.sep, "/")
-        if isinstance(value, list):
-            return [_host_file_urls(item) for item in value]
-        if isinstance(value, dict):
-            return {key: _host_file_urls(item) for key, item in value.items()}
-        return value
-
-    class LocalHandler(SimpleHTTPRequestHandler):
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            super().__init__(*args, directory=directory, **kwargs)
-
-        def do_GET(self) -> None:
-            parsed = urlparse(self.path)
-            if parsed.path == "/favicon.ico":
-                try:
-                    with open(base.favicon_file, "rb") as favicon:
-                        payload = favicon.read()
-                    self.send_response(200)
-                    self.send_header("Content-Type", "image/x-icon")
-                    self.send_header("Content-Length", str(len(payload)))
-                    self.end_headers()
-                    self.wfile.write(payload)
-                except OSError:
-                    self.send_error(404)
-                return
-            if parsed.path.startswith("/themes/"):
-                self.path = unquote(parsed.path[len("/themes/") :])
-                self.directory = base.themes_dir
-            elif parsed.path.startswith("/plugins/"):
-                self.path = unquote(parsed.path[len("/plugins/") :])
-                self.directory = base.plugins_dir
-            super().do_GET()
-
-        def do_POST(self) -> None:
-            if self.path != "/api":
-                self.send_error(404)
-                return
-            try:
-                length = int(self.headers.get("Content-Length", "0"))
-                request = json.loads(self.rfile.read(length))
-                method_name = request["method"]
-                method = getattr(api, method_name)
-                if method_name.startswith("_") or not callable(method):
-                    raise ValueError("Invalid API method")
-                result = method(*request.get("args", []), **request.get("kwargs", {}))
-                result = _host_file_urls(result)
-                payload = json.dumps({"result": result}).encode("utf-8")
-                self.send_response(200)
-            except Exception as error:
-                payload = json.dumps({"error": str(error)}).encode("utf-8")
-                self.send_response(500)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(payload)))
-            self.end_headers()
-            self.wfile.write(payload)
-
-    handler = LocalHandler
-    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
-    server.daemon_threads = True
-    serve_thread = threading.Thread(target=server.serve_forever, daemon=False, name="minify-http-server")
-    server._serve_thread = serve_thread
-    serve_thread.start()
-    return server
-
-
-def is_webview2_installed() -> bool:
-    candidate_dirs = [
-        os.path.join(
-            os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), "Microsoft", "EdgeWebView", "Application"
-        ),
-        os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), "Microsoft", "EdgeWebView", "Application"),
-        os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "EdgeWebView", "Application"),
-    ]
-
-    for base_dir in candidate_dirs:
-        if not base_dir or not os.path.isdir(base_dir):
-            continue
-        try:
-            for _, _, files in os.walk(base_dir):
-                if "msedgewebview2.exe" in files:
-                    return True
-        except OSError:
-            pass
-    return False

@@ -26,4 +26,5 @@
   * [helper](/development/symbols/helper)
   * [ui.alerts](/development/symbols/ui.alerts)
   * [ui.app](/development/symbols/ui.app)
+  * [ui.bridge](/development/symbols/ui.bridge)
   * [ui.pickers](/development/symbols/ui.pickers)

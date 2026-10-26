@@ -9,7 +9,7 @@ Variables that almost never change
 <details open><summary>Source</summary>
 
 ```python
-VERSION = "2rc8"
+VERSION = "2rc9"
 ```
 
 </details>
@@ -104,6 +104,26 @@ HEADLESS = True
 
 </details>
 
+### `RPC`
+
+<details open><summary>Source</summary>
+
+```python
+RPC = sys.argv[1:2] == ["rpc"]
+```
+
+</details>
+
+### `NONINTERACTIVE`
+
+<details open><summary>Source</summary>
+
+```python
+NONINTERACTIVE = RPC or os.environ.get("MINIFY_NONINTERACTIVE") == "1"
+```
+
+</details>
+
 ### `OWNER`
 
 <details open><summary>Source</summary>
@@ -170,16 +190,6 @@ plugins_dir = os.path.abspath(os.path.join(base_dir, "plugins"))
 
 ```python
 themes_dir = os.path.abspath(os.path.join(base_dir, "themes"))
-```
-
-</details>
-
-### `dist_index`
-
-<details open><summary>Source</summary>
-
-```python
-dist_index = os.path.abspath(os.path.join(web_dir, "index.html"))
 ```
 
 </details>

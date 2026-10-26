@@ -6,14 +6,16 @@ If you have any questions or just want to share your progress, join us on [Disco
 
 ## Running from the source
 
-Prerequisites are `git`, `python` and `uv`. (also `tk` for tkinter and `wine` for workshop tools executables on Linux)
+Prerequisites are `git`, `uv` and the .NET 10 SDK (also `wine` for workshop tools executables on Linux).
 
 ```shell
-git clone https://github.com/Egezenn/dota2-minify
-cd dota2-minify
-uv sync --extra linux # if on linux
-uv run Minify
+git clone https://github.com/J0nathan550/dota2-minify-avalonia
+cd dota2-minify-avalonia
+uv sync
+dotnet run --project desktop/Minify.Desktop
 ```
+
+The desktop app (Avalonia) runs the Python backend from `Minify/` in the background. `uv run Minify --help` lists the backend's command line.
 
 ## Creating mods
 

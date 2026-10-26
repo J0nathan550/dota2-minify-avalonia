@@ -61,11 +61,9 @@ STEAM_DOTA_ID = "570"
 if FROZEN:
     base_dir = os.path.dirname(os.path.abspath(sys.executable))
     bundle_dir = getattr(sys, "_MEIPASS", base_dir)
-    web_dir = os.path.abspath(os.path.join(bundle_dir, "ui"))
 else:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     bundle_dir = base_dir
-    web_dir = os.path.abspath(os.path.join(base_dir, "ui", "web", "dist"))
 
 # The desktop app keeps user data (mods, config, cache, logs, tools) outside its read-only install,
 # e.g. an AppImage, and tells the backend where with MINIFY_HOME.
@@ -75,7 +73,6 @@ if os.environ.get("MINIFY_HOME"):
 
 plugins_dir = os.path.abspath(os.path.join(base_dir, "plugins"))
 themes_dir = os.path.abspath(os.path.join(base_dir, "themes"))
-dist_index = os.path.abspath(os.path.join(web_dir, "index.html"))
 
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)

@@ -1,4 +1,3 @@
-import json
 import threading
 import time
 from typing import Any, Callable, Dict, List, Optional
@@ -9,7 +8,6 @@ from core import output
 
 class PatchService:
     def __init__(self) -> None:
-        self._window: Any = None
         self._event_sink: Optional[Callable[[str, Any], None]] = None
         self._is_patching: bool = False
         self._logs: List[Dict[str, Any]] = []
@@ -19,21 +17,14 @@ class PatchService:
         output.register_listener(self._on_output_log)
         output.register_download_listener(self._on_download_progress)
 
-    def set_window(self, window: Any) -> None:
-        self._window = window
-
     def set_event_sink(self, sink: Optional[Callable[[str, Any], None]]) -> None:
         self._event_sink = sink
 
-    def _emit(self, callback: str, payload: Any) -> None:
+    def _emit(self, event: str, payload: Any) -> None:
+        "Events are named after the web UI's callbacks: onLogReceived, onPatchStatusChange, onDownloadProgress."
         if self._event_sink:
             try:
-                self._event_sink(callback, payload)
-            except Exception:
-                pass
-        if self._window:
-            try:
-                self._window.evaluate_js(f"window.{callback} && window.{callback}({json.dumps(payload)});")
+                self._event_sink(event, payload)
             except Exception:
                 pass
 

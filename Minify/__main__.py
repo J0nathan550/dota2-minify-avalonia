@@ -36,7 +36,7 @@ from core import config as _config
 
 app = typer.Typer(
     name="dota2-minify",
-    help="Dota2-Minify CLI and GUI.",
+    help="Dota2-Minify backend and CLI. The interface is the Minify desktop app (desktop/).",
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 
@@ -89,14 +89,14 @@ def _main(
         callback=_version_callback,
         is_eager=True,
     ),
-    host: bool = typer.Option(False, "--host", help="Host the UI on a local port and open it in the default browser."),
 ):
     base.HEADLESS = ctx.invoked_subcommand not in (None, "rpc")
-    if ctx.invoked_subcommand not in ("config", "mods"):
+    if ctx.invoked_subcommand not in (None, "config", "mods"):
         utils.setup_system()
 
     if ctx.invoked_subcommand is None:
-        ui.launch(host=host)
+        print(ctx.get_help())
+        print("\nThe interface is the Minify desktop app; run it, or use one of the commands above.")
 
 
 @app.command(name="rpc", hidden=True)

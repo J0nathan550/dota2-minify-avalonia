@@ -118,10 +118,12 @@ def add_prelaunch_to_launch_options(check_only=False):
 
         tokens = launch_options.split()
 
+        # The desktop app passes its own path (e.g. the AppImage), which forwards `prelaunch` to the backend.
+        launcher = os.environ.get("MINIFY_LAUNCHER") or sys.executable
         if base.is_win:
-            prefix = f'"{sys.executable}" prelaunch'
+            prefix = f'"{launcher}" prelaunch'
         else:
-            prefix = f'bash -c "{sys.executable} prelaunch" &&'
+            prefix = f'bash -c "{launcher} prelaunch" &&'
 
         if launch_options.startswith(prefix):
             continue
@@ -427,7 +429,7 @@ def get_steam_root_path():
 Handles Dota2 finding
 root = library: found
 root != library: find from library VDF
-if root is unknown: user is manually prompted to select root, library will be found via VDF
+if root is unknown: the desktop app asks the user for it (see Api.set_steam_root)
 
 <details open><summary>Source</summary>
 
@@ -437,53 +439,24 @@ def handle_non_default_path(steam_root):
     Handles Dota2 finding
     root = library: found
     root != library: find from library VDF
-    if root is unknown: user is manually prompted to select root, library will be found via VDF
+    if root is unknown: the desktop app asks the user for it (see Api.set_steam_root)
     """
     steam_library = config.get("steam_library", "")
     if not os.path.exists(os.path.join(steam_library, base.DOTA_EXECUTABLE_PATH)):
         find_library_from_vdf(steam_root)
         steam_library = config.get("steam_library", "")
 
-    # last line of defense
-    while not steam_library or (
-        not os.path.exists(os.path.join(steam_library, base.DOTA_EXECUTABLE_PATH))
-        and not os.path.exists(os.path.join(steam_library, base.DOTA_EXECUTABLE_PATH_FALLBACK))
-    ):
-        try:
-            import tkinter as tk
-            from tkinter import filedialog, messagebox
-
-            root = tk.Tk()
-            root.withdraw()
-            root.wm_attributes("-topmost", 1)
-            choice = messagebox.askokcancel(
-                "Minify Install Path Handler",
-                "We couldn't find your Steam installation, please select your Steam installation directory",
-                parent=root,
-            )
-            root.lift()
-            root.focus_force()
-
-            if choice:
-                steam_root = os.path.normpath(filedialog.askdirectory())
-                config.set("steam_root", steam_root)
-                find_library_from_vdf(steam_root)
-                steam_library = config.get("steam_library")
-
-            else:
-                sys.exit()
-
-            root.destroy()
-
-        except Exception as e:
-            messagebox.showerror(
-                "Minify Install Path Handler",
-                f'An unexpected error happened. Set your Steam paths in \'config/minify_config.json > "steam_root", "steam_library"\' and restart Minify.\n\nError: {e}',
-                parent=root,
-            )
-            root.lift()
-            root.focus_force()
-            break
+    dota_found = steam_library and (
+        os.path.exists(os.path.join(steam_library, base.DOTA_EXECUTABLE_PATH))
+        or os.path.exists(os.path.join(steam_library, base.DOTA_EXECUTABLE_PATH_FALLBACK))
+    )
+    # The desktop app asks for the folder itself and calls `set_steam_root`.
+    if not dota_found and not base.NONINTERACTIVE:
+        print(
+            "Dota 2 was not found in your Steam libraries. Open the Minify app to select your Steam folder, "
+            'or set "steam_root" and "steam_library" in config/minify_config.json.',
+            file=sys.stderr,
+        )
     return steam_root
 ```
 

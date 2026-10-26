@@ -86,51 +86,6 @@ class ConfigService:
                 return f.read()
         return ""
 
-    def get_base_css(self) -> str:
-        candidates = [
-            os.path.join(base.web_dir, "app.css"),
-            os.path.join(getattr(base, "bundle_dir", base.base_dir), "ui", "app.css"),
-        ]
-        for p in candidates:
-            if os.path.isfile(p):
-                with open(p, "r", encoding="utf-8") as f:
-                    return f.read()
-        return ""
-
-    @staticmethod
-    def extract_bg_color(theme_css: str) -> str:
-        if not theme_css:
-            return "#FFFFFF"
-        match = re.search(r"--bg-primary\s*:\s*(#[0-9a-fA-F]{3,6})\b", theme_css)
-        if match:
-            return match.group(1)
-        return "#FFFFFF"
-
-    @staticmethod
-    def inject_theme_into_content(html: str, theme_css: str, base_css: str = "") -> str:
-        if not html:
-            return ""
-        styles = []
-        if base_css:
-            styles.append(f'<style id="minify-base">{base_css}</style>')
-        if theme_css:
-            styles.append(f'<style id="minify-theme">{theme_css}</style>')
-        if not styles:
-            return html
-        theme_tag = "".join(styles)
-        head_close = html.rfind("</head>")
-        if head_close != -1:
-            return html[:head_close] + theme_tag + html[head_close:]
-        return theme_tag + html
-
-    def get_html_with_theme(self, theme_css: str, file_path: str | None = None) -> str:
-        file_path = file_path or base.dist_index
-        if not os.path.isfile(file_path):
-            return ""
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        return self.inject_theme_into_content(content, theme_css)
-
     @staticmethod
     def parse_setting_item(
         item: dict, mod_folder: str | None = None, plugin_folder: str | None = None

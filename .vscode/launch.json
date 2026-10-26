@@ -2,17 +2,19 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "gui",
+      "name": "backend (rpc)",
       "type": "debugpy",
       "request": "launch",
       "program": "Minify/__main__.py",
+      "args": ["rpc"],
       "console": "integratedTerminal"
     },
     {
-      "name": "gui console",
+      "name": "backend patch",
       "type": "debugpy",
       "request": "launch",
       "program": "Minify/__main__.py",
+      "args": ["patch"],
       "console": "internalConsole"
     }
   ]

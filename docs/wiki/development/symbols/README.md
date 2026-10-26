@@ -20,4 +20,5 @@
 - [core.utils](/development/symbols/core.utils)
 - [ui.alerts](/development/symbols/ui.alerts)
 - [ui.app](/development/symbols/ui.app)
-- [ui.pickers](/development/symbols/ui.pickers)
+- [ui.bridge](/development/symbols/ui.bridge) - Newline-delimited JSON bridge over stdio for native frontends.
+- [ui.pickers](/development/symbols/ui.pickers) - File dialogs, shown by the desktop app. Without it (plain CLI) there is nothing to pick with.

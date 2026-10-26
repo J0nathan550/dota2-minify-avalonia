@@ -57,24 +57,6 @@ def test_plugin_build_and_uninstall_hooks():
         mock_unins.assert_called_once()
 
 
-def test_plugin_tabs_filtered_when_unbuilt():
-    from ui.app import Api
-
-    api = Api()
-    with patch.object(api, "_resolve_plugin_entry", return_value=None):
-        tabs = api.get_plugin_tabs()
-        assert tabs == []
-
-
-def test_get_plugin_content_inlining():
-    from ui.app import Api
-
-    api = Api()
-    content = api.get_plugin_content("d2pfx")
-    if content:
-        assert "<script" in content or "<style" in content
-
-
 def test_plugin_settings_json_discovery():
     from ui.app import Api
 
@@ -120,7 +102,7 @@ def test_plugin_manifest_id_resolves_registry_name_folder(tmp_path):
 
     with patch("core.base.plugins_dir", str(tmp_path)):
         api = Api()
-        assert api.get_plugin_content("wiki-browser").endswith("Wiki</body></html>")
+        assert {"id": "wiki-browser", "name": "Wiki", "has_web_ui": True} in api.get_plugins()
         result = api.call_plugin_api("wiki-browser", "ping")
         assert result["folder"].startswith(str(plugin_dir))
 

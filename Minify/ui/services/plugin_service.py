@@ -8,19 +8,6 @@ from typing import Any, Dict, List, Optional
 from core import base, config, mods_shared, utils
 
 
-PLUGIN_TAB_NAVIGATION_SCRIPT = """
-<script>
-  window.addEventListener("keydown", function (event) {
-    if (event.ctrlKey && event.key === "Tab") {
-      event.preventDefault();
-      event.stopPropagation();
-      window.parent.postMessage({ type: "CYCLE_TAB", forward: !event.shiftKey }, "*");
-    }
-  });
-</script>
-"""
-
-
 class PluginService:
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -55,31 +42,6 @@ class PluginService:
                     return p_path
         return None
 
-    def get_tabs(self, resolve_func=None) -> List[Dict[str, Any]]:
-        tabs = []
-        resolve = resolve_func or self._resolve_plugin_entry
-        plugins_dir = base.plugins_dir
-        if os.path.exists(plugins_dir):
-            for p_name in sorted(os.listdir(plugins_dir)):
-                if mods_shared.is_ignored_folder(p_name):
-                    continue
-                p_path = os.path.join(plugins_dir, p_name)
-                manifest_path = os.path.join(p_path, "manifest.json")
-                if os.path.isfile(manifest_path):
-                    manifest = config.read_json_file(manifest_path)
-                    if isinstance(manifest, dict) and "id" in manifest and "name" in manifest:
-                        abs_entry = resolve(p_path)
-                        if abs_entry and os.path.isfile(abs_entry):
-                            entry_url = utils.path_to_uri(abs_entry)
-                            tabs.append(
-                                {
-                                    "id": manifest["id"],
-                                    "name": manifest["name"],
-                                    "entry_point": entry_url,
-                                }
-                            )
-        return tabs
-
     def get_plugins(self) -> List[Dict[str, Any]]:
         "Every plugin with a manifest, whether or not it has a built web UI."
         plugins = []
@@ -103,25 +65,6 @@ class PluginService:
                     }
                 )
         return plugins
-
-    def get_content(self, plugin_id: str) -> str:
-        p_path = self._find_plugin_path(plugin_id)
-        if p_path:
-            abs_entry = self._resolve_plugin_entry(p_path)
-            if abs_entry and os.path.isfile(abs_entry):
-                with open(abs_entry, "r", encoding="utf-8") as f:
-                    content = f.read()
-                from ui.services.config_service import ConfigService
-
-                cs = ConfigService()
-                theme_css = cs.get_theme_css(config.get("theme", "light"))
-                base_css = cs.get_base_css()
-                content = cs.inject_theme_into_content(content, theme_css, base_css)
-                head_close = content.rfind("</head>")
-                if head_close != -1:
-                    return content[:head_close] + PLUGIN_TAB_NAVIGATION_SCRIPT + content[head_close:]
-                return PLUGIN_TAB_NAVIGATION_SCRIPT + content
-        return ""
 
     def get_localization(self, plugin_id: str, lang: str = "en") -> Dict[str, str]:
         from core import localization

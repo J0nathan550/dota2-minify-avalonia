@@ -294,25 +294,61 @@ def test_set_game_language_updates_output_path():
         assert "dota_dutch" in helper.output_path
 
 
-def test_ui_pickers():
-    from ui.pickers import pick_file
+class _FakeBridge:
+    def __init__(self, answer=None):
+        self.answer = answer
+        self.requests = []
 
-    with patch("webview.windows", [MagicMock()]):
-        webview_win = __import__("webview").windows[0]
-        webview_win.create_file_dialog.return_value = ["/path/to/test.png"]
+    def request(self, method, **params):
+        self.requests.append((method, params))
+        return self.answer
 
-        res = pick_file("Test Title", ("*.png",))
-        assert res == "/path/to/test.png"
+
+def test_ui_pickers_ask_the_desktop_app():
+    from ui import bridge
+    from ui.pickers import pick_file, pick_files
+
+    fake = _FakeBridge("/path/to/test.png")
+    with patch.object(bridge, "active", fake):
+        assert pick_file("Test Title", ("Images (*.png)",)) == "/path/to/test.png"
+    method, params = fake.requests[0]
+    assert method == "pick_file"
+    assert params["title"] == "Test Title"
+    assert params["file_types"] == ["Images (*.png)"]
+
+    with patch.object(bridge, "active", _FakeBridge(None)):
+        assert pick_files() == []
+
+
+def test_ui_pickers_without_the_desktop_app():
+    from ui import bridge
+    from ui.pickers import pick_file, pick_folder
+
+    with patch.object(bridge, "active", None):
+        assert pick_file() is None
+        assert pick_folder() is None
 
 
 def test_ui_alerts():
-    from core import localization
+    from core import localization, output
+    from ui import bridge
     from ui.alerts import alert
 
     localization.localization_dict["test_alert_key"] = "Hello {0}!"
+    fake = _FakeBridge()
+    logged = []
 
-    with patch("webview.windows", [MagicMock()]):
-        webview_win = __import__("webview").windows[0]
+    def listener(text, msg_type):
+        logged.append((text, msg_type))
 
-        alert("&test_alert_key", "World", msg_type="info")
-        webview_win.evaluate_js.assert_called_once_with('alert("[Notice] Hello World!");')
+    output.register_listener(listener)
+    try:
+        with patch.object(bridge, "active", fake):
+            alert("&test_alert_key", "World", msg_type="warning")
+        with patch.object(bridge, "active", None):
+            alert("Only in the terminal")
+    finally:
+        output.unregister_listener(listener)
+
+    assert fake.requests == [("alert", {"text": "Hello World!", "title": "Warning", "msg_type": "warning"})]
+    assert logged == [("Hello World!", "warning"), ("Only in the terminal", "info")]

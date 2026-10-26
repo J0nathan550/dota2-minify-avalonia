@@ -11,28 +11,19 @@ Thank you for your interest in contributing! Whether you're fixing a bug, sugges
 1. **Fork and Clone**:
 
    ```shell
-   git clone https://github.com/Egezenn/dota2-minify
-   cd dota2-minify
+   git clone https://github.com/J0nathan550/dota2-minify-avalonia
+   cd dota2-minify-avalonia
    ```
 
 2. **Setup Dependencies**:
-   This project uses `uv` for dependency management.
+   The backend uses `uv` for dependency management; the interface needs the .NET 10 SDK.
 
    ```shell
-   npm --prefix Minify/ui/web install
+   uv sync
+   dotnet run --project desktop/Minify.Desktop
    ```
 
-   ```shell
-   uv run Minify
-   ```
-
-   For any UI changes:
-
-   ```shell
-   npm --prefix Minify/ui/web run build
-   ```
-
-   _Note: This will automatically handle the environment and dependencies._
+   _Note: the desktop app starts the Python backend from this checkout automatically. See [`desktop/README.md`](desktop/README.md)._
 
 ## Development Workflow
 
@@ -46,7 +37,7 @@ To ensure your code meets our standards, simply run the pre-commit script before
 bash scripts/precommit.sh
 ```
 
-This script will automatically sync dependencies, check formatting, run the linter, and execute all tests.
+This script will automatically sync dependencies, check formatting, run the linter, and execute all Python and desktop app tests.
 
 ### VSCode Integrations
 
@@ -55,6 +46,8 @@ If you are using VSCode, the following recommended extensions can be found in `.
 Additionally, we have pre-configured tasks available to streamline development. You can quickly run the application using `Ctrl+Shift+B`.
 
 Debugger configurations are also available in `.vscode/launch.json`. However, the overhead of a debugger is rarely worth it; you can typically achieve the same results much faster through rapid iteration—simply run the application and fix errors as they appear in the terminal or `Minify/logs`. For testing logic without a GUI, you can use the CLI mode: `uv run Minify --help`.
+
+Tests are expected with every change: `uv run pytest` for the backend and `dotnet test desktop/Minify.Desktop.slnx` for the desktop app.
 
 ## Building the application
 
