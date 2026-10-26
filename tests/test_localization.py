@@ -34,24 +34,8 @@ def find_unused_keys(root_dir):
     return [key for key in keys if not is_used(key)]
 
 
-# Translated update-dialog strings from the web UI, reused by the desktop app's updater.
-PENDING_UPDATER_KEYS = {
-    "button_ignore_version",
-    "button_update_now",
-    "label_current_version",
-    "label_new_version",
-    "label_release_notes",
-    "modal_update_message",
-    "msg_download_complete_launching",
-    "status_closing",
-    "status_downloading",
-    "status_launching_installer",
-    "title_update_available",
-}
-
-
 def test_unused_localization_keys():
-    unused_keys = [k for k in find_unused_keys(ROOT_DIR) if k not in PENDING_UPDATER_KEYS]
+    unused_keys = find_unused_keys(ROOT_DIR)
     assert len(unused_keys) == 0, f"Unused localization keys found: {unused_keys}"
 
 

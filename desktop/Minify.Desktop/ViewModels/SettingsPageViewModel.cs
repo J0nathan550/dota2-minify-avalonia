@@ -23,7 +23,10 @@ public sealed partial class SettingsSectionViewModel(string title, string? mod, 
     private Task ResetAsync() => reset(this);
 }
 
-public sealed partial class SettingsPageViewModel(AppSession session, Func<string, object?, Task> onApplicationSettingChanged)
+public sealed partial class SettingsPageViewModel(
+    AppSession session,
+    Func<string, object?, Task> onApplicationSettingChanged,
+    System.Windows.Input.ICommand? checkForUpdates = null)
     : PageViewModel("settings")
 {
     public override string Title => session.Loc["tab_settings"];
@@ -34,6 +37,8 @@ public sealed partial class SettingsPageViewModel(AppSession session, Func<strin
 
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
+
+    public System.Windows.Input.ICommand? CheckForUpdatesCommand => checkForUpdates;
 
     public string AboutVersion => $"Minify {AppInfo.Version} · backend {session.Backend.BackendVersion}";
 

@@ -42,13 +42,21 @@ public sealed partial class DownloadItemViewModel(string id, Localizer loc) : Ob
         _ => Mb(DownloadedBytes),
     };
 
-    public void Update(JsonElement data)
+    /// <summary>A backend onDownloadProgress event.</summary>
+    public void Update(JsonElement data) => Update(
+        data.GetProperty("name").GetString() ?? Id,
+        data.GetProperty("downloaded_bytes").GetInt64(),
+        data.GetProperty("total_bytes").GetInt64(),
+        data.GetProperty("status").GetString() ?? "downloading",
+        data.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : null);
+
+    public void Update(string name, long downloaded, long total, string status, string? error = null)
     {
-        Name = data.GetProperty("name").GetString() ?? Id;
-        DownloadedBytes = data.GetProperty("downloaded_bytes").GetInt64();
-        TotalBytes = data.GetProperty("total_bytes").GetInt64();
-        Error = data.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String ? e.GetString() : null;
-        Status = data.GetProperty("status").GetString() ?? "downloading";
+        Name = name;
+        DownloadedBytes = downloaded;
+        TotalBytes = total;
+        Error = error;
+        Status = status;
     }
 
     private static string Mb(long bytes) => $"{bytes / (1024.0 * 1024.0):0.00} MB";

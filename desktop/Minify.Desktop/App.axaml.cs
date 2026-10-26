@@ -27,7 +27,9 @@ public sealed class App : Application
                 async () => await BackendClient.StartAsync(BackendCommand.Resolve()),
                 new ThemeService(),
                 new HttpAnnouncementSource(Http.Client, HttpAnnouncementSource.DefaultUrl),
-                new RemoteImageLoader(Http.Client));
+                new RemoteImageLoader(Http.Client),
+                new UpdateService(new Updater(Http.Client, GitHubReleaseFeed.FromEnvironment(Http.Client), Installation.Detect())),
+                () => window.Close());
             window.DataContext = viewModel;
             desktop.MainWindow = window;
             var backendStopped = false;

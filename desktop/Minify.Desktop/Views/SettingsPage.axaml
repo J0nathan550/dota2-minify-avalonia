@@ -127,6 +127,8 @@
                     CommandParameter="https://github.com/Egezenn/dota2-minify" />
             <Button Content="Avalonia port" Command="{Binding OpenUrlCommand}"
                     CommandParameter="https://github.com/J0nathan550/dota2-minify-avalonia" />
+            <Button Classes="accent" Content="Check for updates" Command="{Binding CheckForUpdatesCommand}"
+                    IsVisible="{Binding CheckForUpdatesCommand, Converter={x:Static ObjectConverters.IsNotNull}}" />
           </StackPanel>
         </StackPanel>
       </Border>

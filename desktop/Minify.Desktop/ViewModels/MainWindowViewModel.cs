@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Minify.Desktop.Backend;
 using Minify.Desktop.Services;
+using Minify.Desktop.Services.Updates;
 
 namespace Minify.Desktop.ViewModels;
 
@@ -23,7 +24,9 @@ public sealed partial class MainWindowViewModel(
     Func<Task<IBackend>> startBackend,
     IThemeService? themes = null,
     IAnnouncementSource? announcements = null,
-    IImageLoader? images = null)
+    IImageLoader? images = null,
+    IUpdateService? updates = null,
+    Action? exit = null)
     : ObservableObject, IAsyncDisposable
 {
     public const string WorkshopToolsReleasesUrl = "https://github.com/Dota-Modding-Community/workshoptools/releases";
@@ -132,7 +135,8 @@ public sealed partial class MainWindowViewModel(
         {
             await OfferLegacyModsImportAsync();
             var announced = await ShowAnnouncementsAsync();
-            if (!announced && IsWorkshopMissing)
+            var offeredUpdate = !announced && await OfferUpdateAsync(manual: false);
+            if (!announced && !offeredUpdate && IsWorkshopMissing)
                 await OfferWorkshopToolsDownloadAsync(onStartup: true);
         }
         catch (Exception ex)
@@ -238,6 +242,86 @@ public sealed partial class MainWindowViewModel(
     [RelayCommand]
     private Task DownloadWorkshopToolsAsync() => OfferWorkshopToolsDownloadAsync(onStartup: false);
 
+    public const string IgnoredUpdateStateKey = "ignored_update_version";
+
+    /// <summary>Settings > About: check now, even for an ignored version, and say when there is nothing new.</summary>
+    [RelayCommand]
+    private Task CheckForUpdatesAsync() => OfferUpdateAsync(manual: true);
+
+    /// <summary>Offers a newer release; returns whether a prompt was shown.</summary>
+    private async Task<bool> OfferUpdateAsync(bool manual)
+    {
+        if (updates is null)
+            return false;
+        UpdateInfo? update;
+        try
+        {
+            update = await updates.CheckAsync(AppInfo.Version);
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Update check failed: {ex.Message}");
+            if (manual)
+                await dialogs.AlertAsync(Loc["title_update_available"], $"Couldn't check for updates: {ex.Message}", "error");
+            return false;
+        }
+
+        if (update is null)
+        {
+            if (manual)
+                await dialogs.AlertAsync("Minify", $"Minify {AppInfo.Version} is up to date.", "success");
+            return false;
+        }
+        if (!manual && await Backend.CallAsync<string>("get_state", IgnoredUpdateStateKey) == update.Version.ToString())
+            return false;
+
+        var install = update.CanInstall
+            ? new DialogButton("update", Loc["button_update_now"], IsDefault: true, IsAccent: true)
+            : new DialogButton("open", "Open download page", IsDefault: true, IsAccent: true);
+        var result = await dialogs.ShowAsync(new DialogRequest(
+            Loc["title_update_available"],
+            $"{Loc["modal_update_message"]}\n\n{Loc["label_current_version"]} {AppInfo.Version}\n{Loc["label_new_version"]} {update.Version}",
+            [
+                new DialogButton("ignore", Loc["button_ignore_version"]),
+                new DialogButton("later", Loc["button_later"], IsCancel: true),
+                install,
+            ],
+            Details: string.IsNullOrWhiteSpace(update.Notes) ? null : $"{Loc["label_release_notes"]}\n{update.Notes}"));
+
+        switch (result.ButtonId)
+        {
+            case "ignore":
+                await Backend.CallAsync("set_state", IgnoredUpdateStateKey, update.Version.ToString());
+                break;
+            case "open" when update.PageUrl is not null:
+                await dialogs.OpenUrlAsync(update.PageUrl);
+                break;
+            case "update":
+                await InstallUpdateAsync(update);
+                break;
+        }
+        return true;
+    }
+
+    private async Task InstallUpdateAsync(UpdateInfo update)
+    {
+        var item = new DownloadItemViewModel("app-update", Loc);
+        var name = $"Minify {update.Version}";
+        item.Update(name, 0, update.Asset!.Size, "downloading");
+        Downloads.Add(item);
+        try
+        {
+            await updates!.InstallAsync(update, new Progress<(long Done, long Total)>(p => item.Update(name, p.Done, p.Total, "downloading")));
+            item.Update(name, update.Asset.Size, update.Asset.Size, "finished");
+            exit?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            item.Update(name, 0, 0, "error", ex.Message);
+            await dialogs.AlertAsync(Loc["title_update_available"], ex.Message, "error");
+        }
+    }
+
     public async Task LoadLocaleAsync(string locale)
     {
         Loc.Load(await Backend.CallAsync<Dictionary<string, string>>("get_localization", locale) ?? [], locale);
@@ -291,7 +375,7 @@ public sealed partial class MainWindowViewModel(
     {
         ModsPage = new ModsPageViewModel(session);
         TerminalPage = new TerminalPageViewModel(session);
-        SettingsPage = new SettingsPageViewModel(session, OnApplicationSettingChangedAsync);
+        SettingsPage = new SettingsPageViewModel(session, OnApplicationSettingChangedAsync, CheckForUpdatesCommand);
         await ModsPage.LoadAsync();
         foreach (var entry in await session.Backend.CallAsync<List<LogEntry>>("get_logs") ?? [])
             TerminalPage.Add(entry);

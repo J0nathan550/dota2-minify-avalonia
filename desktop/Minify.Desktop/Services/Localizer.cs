@@ -58,6 +58,13 @@ public sealed class Localizer : INotifyPropertyChanged
         ["modal_workshop_tools_prompt"] = "Would you like to extract them for later use?",
         ["title_import_legacy_mods"] = "Import old mods",
         ["community_title"] = "Community",
+        ["title_update_available"] = "Update Available",
+        ["modal_update_message"] = "A new version of Dota 2 Minify is available to download.",
+        ["label_current_version"] = "Current:",
+        ["label_new_version"] = "New:",
+        ["label_release_notes"] = "Release Notes:",
+        ["button_update_now"] = "Update Now",
+        ["button_ignore_version"] = "Ignore This Version",
         ["modal_import_legacy_mods"] = "Old mods from a previous installation were found. Import them now? Entries that are not migrated will be deleted.",
     };
 
