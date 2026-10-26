@@ -148,7 +148,8 @@ public sealed class AppHomeTests : IDisposable
         Assert.NotEqual(0, CliForwarder.Run(command.WithArguments(["patch", "--no-such-option"]), output, error));
 
         Assert.Matches(@"^\S+\s*$", output.ToString().Split('\n')[0]);
-        Assert.Contains("--no-such-option", error.ToString());
+        // Typer's error box wraps differently without a terminal, but always starts with the usage line.
+        Assert.Contains("Usage: Minify patch", error.ToString());
     }
 
     private static void Write(string path, string content)
