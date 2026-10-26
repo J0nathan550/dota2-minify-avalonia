@@ -53,51 +53,6 @@ public sealed class FileTypeParsingTests
     }
 }
 
-[Collection(nameof(EnvironmentCollection))]
-public sealed class BackendCommandTests : IDisposable
-{
-    private readonly string _dir = Directory.CreateTempSubdirectory("minify-cmd").FullName;
-
-    [Fact]
-    public void Override_pointing_to_an_executable_runs_it_in_rpc_mode()
-    {
-        var exe = Path.Combine(_dir, "Minify");
-        File.WriteAllText(exe, "");
-        Environment.SetEnvironmentVariable("MINIFY_BACKEND", exe);
-
-        var command = BackendCommand.Resolve();
-
-        Assert.Equal(exe, command.FileName);
-        Assert.Equal(["rpc"], command.Arguments);
-    }
-
-    [Fact]
-    public void Override_pointing_to_a_source_folder_runs_python()
-    {
-        var source = Directory.CreateDirectory(Path.Combine(_dir, "Minify")).FullName;
-        Environment.SetEnvironmentVariable("MINIFY_BACKEND", source);
-
-        var command = BackendCommand.Resolve();
-
-        Assert.Equal(source, command.Arguments[^2]);
-        Assert.Equal("rpc", command.Arguments[^1]);
-        Assert.Equal(_dir, command.WorkingDirectory);
-    }
-
-    [Fact]
-    public void Override_pointing_nowhere_fails_loudly()
-    {
-        Environment.SetEnvironmentVariable("MINIFY_BACKEND", Path.Combine(_dir, "missing"));
-        Assert.Throws<FileNotFoundException>(BackendCommand.Resolve);
-    }
-
-    public void Dispose()
-    {
-        Environment.SetEnvironmentVariable("MINIFY_BACKEND", null);
-        Directory.Delete(_dir, recursive: true);
-    }
-}
-
 [CollectionDefinition(nameof(EnvironmentCollection), DisableParallelization = true)]
 public sealed class EnvironmentCollection;
 

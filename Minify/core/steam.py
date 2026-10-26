@@ -101,10 +101,12 @@ def add_prelaunch_to_launch_options(check_only=False):
 
         tokens = launch_options.split()
 
+        # The desktop app passes its own path (e.g. the AppImage), which forwards `prelaunch` to the backend.
+        launcher = os.environ.get("MINIFY_LAUNCHER") or sys.executable
         if base.is_win:
-            prefix = f'"{sys.executable}" prelaunch'
+            prefix = f'"{launcher}" prelaunch'
         else:
-            prefix = f'bash -c "{sys.executable} prelaunch" &&'
+            prefix = f'bash -c "{launcher} prelaunch" &&'
 
         if launch_options.startswith(prefix):
             continue
@@ -362,8 +364,8 @@ def handle_non_default_path(steam_root):
         not os.path.exists(os.path.join(steam_library, base.DOTA_EXECUTABLE_PATH))
         and not os.path.exists(os.path.join(steam_library, base.DOTA_EXECUTABLE_PATH_FALLBACK))
     ):
-        if base.RPC:
-            break  # the frontend asks for the path and calls `set_steam_root`
+        if base.NONINTERACTIVE:
+            break  # the desktop app asks for the path and calls `set_steam_root`
 
         try:
             import tkinter as tk

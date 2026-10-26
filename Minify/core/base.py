@@ -18,7 +18,9 @@ is_mac = True if OS == "Darwin" else False
 
 FROZEN = getattr(sys, "frozen", False)
 HEADLESS = True
-RPC = sys.argv[1:2] == ["rpc"]  # driven by the native frontend over stdio, nothing may prompt on its own
+RPC = sys.argv[1:2] == ["rpc"]  # driven by the native frontend over stdio
+# Started by the desktop app (or rpc): never open dialogs on our own, the app handles it
+NONINTERACTIVE = RPC or os.environ.get("MINIFY_NONINTERACTIVE") == "1"
 
 OWNER = "Egezenn"
 REPO = "dota2-minify"
@@ -64,6 +66,12 @@ else:
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     bundle_dir = base_dir
     web_dir = os.path.abspath(os.path.join(base_dir, "ui", "web", "dist"))
+
+# The desktop app keeps user data (mods, config, cache, logs, tools) outside its read-only install,
+# e.g. an AppImage, and tells the backend where with MINIFY_HOME.
+if os.environ.get("MINIFY_HOME"):
+    base_dir = os.path.abspath(os.environ["MINIFY_HOME"])
+    os.makedirs(base_dir, exist_ok=True)
 
 plugins_dir = os.path.abspath(os.path.join(base_dir, "plugins"))
 themes_dir = os.path.abspath(os.path.join(base_dir, "themes"))

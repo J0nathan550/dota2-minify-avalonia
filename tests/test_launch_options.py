@@ -364,3 +364,25 @@ def test_empty_launch_options(monkeypatch, mock_frozen_env):
         vdf_data["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][base.STEAM_DOTA_ID]["LaunchOptions"]
         == '"/path/to/minify" prelaunch %command%'
     )
+
+
+def test_launcher_from_desktop_app_is_used(monkeypatch, mock_frozen_env):
+    from core import base
+
+    monkeypatch.setattr(base, "is_win", False)
+    monkeypatch.setattr(base, "is_linux", True)
+    monkeypatch.setenv("MINIFY_LAUNCHER", "/home/me/Apps/Minify.AppImage")
+
+    vdf_data = {
+        "UserLocalConfigStore": {
+            "Software": {"Valve": {"Steam": {"apps": {base.STEAM_DOTA_ID: {"LaunchOptions": "%command%"}}}}}
+        }
+    }
+    monkeypatch.setattr("vdf.load", lambda f: vdf_data)
+    monkeypatch.setattr("vdf.dump", MagicMock())
+
+    assert add_prelaunch_to_launch_options() is True
+    assert (
+        vdf_data["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["apps"][base.STEAM_DOTA_ID]["LaunchOptions"]
+        == 'bash -c "/home/me/Apps/Minify.AppImage prelaunch" && %command%'
+    )

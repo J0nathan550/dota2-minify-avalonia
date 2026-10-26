@@ -53,6 +53,8 @@ public sealed class BackendClient : IBackend
         if (command.WorkingDirectory is not null)
             startInfo.WorkingDirectory = command.WorkingDirectory;
         startInfo.Environment["PYTHONUNBUFFERED"] = "1";
+        foreach (var (name, value) in command.Environment ?? new Dictionary<string, string>())
+            startInfo.Environment[name] = value;
 
         var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         if (!process.Start())

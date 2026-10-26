@@ -14,11 +14,8 @@ rpc_stdout = None
 if base.RPC:
     rpc_stdout, sys.stdout = sys.stdout, sys.stderr
 
-# Ensure root directories
-if getattr(sys, "frozen", False):
-    os.chdir(os.path.dirname(os.path.realpath(sys.executable)))
-else:
-    os.chdir(current_dir)
+# Ensure root directories; relative data paths (mods, config, cache, logs) live in base_dir
+os.chdir(base.base_dir)
 
 os.makedirs("cache", exist_ok=True)
 os.makedirs("config", exist_ok=True)

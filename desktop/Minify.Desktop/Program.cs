@@ -1,16 +1,19 @@
 using Avalonia;
+using Minify.Desktop.Backend;
 
 namespace Minify.Desktop;
 
 internal static class Program
 {
     [STAThread]
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
+        if (CliForwarder.IsCliCommand(args))
+            return CliForwarder.Run(args);
 #if DEBUG
         System.Diagnostics.Trace.Listeners.Add(new System.Diagnostics.ConsoleTraceListener(useErrorStream: true));
 #endif
-        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
     // Native Wayland when a compositor is available (no XWayland upscaling), X11 otherwise.
