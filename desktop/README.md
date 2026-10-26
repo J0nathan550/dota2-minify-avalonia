@@ -37,6 +37,6 @@ To try only the backend: `printf '{"id":1,"method":"get_mods"}\n' | uv run pytho
 
 Tests: `dotnet test desktop/Minify.Desktop.slnx` (the real-backend test needs `uv sync`).
 
-Done: mods grid with previews, search and refresh; mod details (notes, preview, file trees, code); toggling mods; patch/uninstall (with "remove everything"); live terminal output; download notifications; settings for the app, mods and plugins (every control type, reset, live language and theme switching); CSS themes from `themes/` mapped onto the native UI; About and credits; the Steam-not-found flow; Workshop Tools download/extract prompts; legacy mods import; announcements (from this repository's `docs/announcements.json`); native file/folder/alert dialogs for mod scripts.
+Done: mods grid with previews, search and refresh; mod details (notes, preview, file trees, code); toggling mods; patch/uninstall (with "remove everything"); live terminal output; download notifications; settings for the app, mods and plugins (every control type, reset, live language and theme switching); CSS themes from `themes/` mapped onto the native UI; About and credits; the Steam-not-found flow; Workshop Tools download/extract prompts; legacy mods import; the D2PFX browser (categories, search, install/update/remove/enable, previews); announcements (from this repository's `docs/announcements.json`); native file/folder/alert dialogs for mod scripts.
 
-Not ported yet from the Svelte UI: plugin tabs (d2pfx, community). The app updater is being replaced by a native one.
+Not ported yet from the Svelte UI: the community plugin tab. The app updater is being replaced by a native one.

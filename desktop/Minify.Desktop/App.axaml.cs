@@ -21,7 +21,8 @@ public sealed class App : Application
                 new DialogService(() => window),
                 async () => await BackendClient.StartAsync(BackendCommand.Resolve()),
                 new ThemeService(),
-                new HttpAnnouncementSource(Http.Client, HttpAnnouncementSource.DefaultUrl));
+                new HttpAnnouncementSource(Http.Client, HttpAnnouncementSource.DefaultUrl),
+                new RemoteImageLoader(Http.Client));
             window.DataContext = viewModel;
             desktop.MainWindow = window;
             var backendStopped = false;

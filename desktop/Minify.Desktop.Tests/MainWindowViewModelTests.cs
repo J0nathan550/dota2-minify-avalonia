@@ -33,6 +33,17 @@ public sealed class MainWindowViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task Built_in_d2pfx_plugin_gets_a_native_page()
+    {
+        var backend = FakeBackend.WithDefaults();
+        var vm = new MainWindowViewModel(_dialogs, () => Task.FromResult<IBackend>(backend), images: new FakeImages());
+
+        await vm.StartAsync();
+
+        Assert.IsType<D2pfxPageViewModel>(vm.Pages.Single(p => p.Id == "d2pfx"));
+    }
+
+    [AvaloniaFact]
     public async Task Web_only_plugins_get_an_explanation_page()
     {
         var (vm, _) = await StartedAsync();

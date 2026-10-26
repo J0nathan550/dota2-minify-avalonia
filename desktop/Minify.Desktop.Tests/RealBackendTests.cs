@@ -1,4 +1,5 @@
 using Minify.Desktop.Backend;
+using Minify.Desktop.ViewModels;
 
 namespace Minify.Desktop.Tests;
 
@@ -47,6 +48,7 @@ public sealed class RealBackendTests
                 spec, default, new(backend, loc, new FakeDialogs()), (_, _) => Task.CompletedTask));
         }
         Assert.NotNull(await backend.CallAsync<List<string>>("get_legacy_mods"));
+        Assert.NotNull(await backend.CallAsync<List<D2pfxInstalled>>("call_plugin_api", "d2pfx", "get_installed_mods", new { }));
         await backend.CallAsync<bool>("is_workshop_installed");
         await backend.CallAsync<bool>("check_workshop_tools_needed");
         Assert.Contains("--bg-primary", Minify.Desktop.Services.ThemeCss.Parse(

@@ -9,6 +9,12 @@
     <Setter Property="ClipToBounds" Value="True" />
   </Style>
 
+  <!-- Enabled/installed cards get an accent outline. -->
+  <Style Selector="Border.card.active">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+
   <!-- Dark code/terminal surface in both themes. -->
   <Style Selector="Border.code">
     <Setter Property="Background" Value="{DynamicResource TerminalBackgroundBrush}" />

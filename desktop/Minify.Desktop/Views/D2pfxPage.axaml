@@ -1,0 +1,106 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Minify.Desktop.ViewModels"
+             x:Class="Minify.Desktop.Views.D2pfxPage"
+             x:DataType="vm:D2pfxPageViewModel">
+  <Grid ColumnDefinitions="220,*">
+
+    <!-- Categories -->
+    <Grid RowDefinitions="Auto,*" Margin="12,8,0,12">
+      <TextBox PlaceholderText="{Binding Loc[placeholder_search_categories]}" Text="{Binding CategorySearch}" />
+      <Border Grid.Row="1" Classes="card" Margin="0,8,0,0">
+        <Panel>
+          <TextBlock Classes="muted" Margin="12" Text="{Binding Loc[label_loading_categories]}"
+                     IsVisible="{Binding IsLoadingCategories}" />
+          <ListBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" Background="Transparent">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:D2pfxCategory">
+                <TextBlock Text="{Binding Name}" ToolTip.Tip="{Binding Description}" TextTrimming="CharacterEllipsis" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Panel>
+      </Border>
+    </Grid>
+
+    <!-- Mods of the selected category -->
+    <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*">
+      <Grid ColumnDefinitions="*,Auto,Auto" Margin="12,8,12,4">
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Classes="h2" Text="{Binding SelectedCategory.Name, FallbackValue=''}" />
+          <TextBlock Classes="muted" Text="{Binding SelectedCategory.Description, FallbackValue=''}"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+        <TextBox Grid.Column="1" Width="220" Margin="12,0,8,0" VerticalAlignment="Center"
+                 PlaceholderText="{Binding Loc[placeholder_search_mods]}" Text="{Binding ModSearch}" />
+        <Button Grid.Column="2" Command="{Binding RefreshDataCommand}" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" />
+            <TextBlock Text="{Binding Loc[button_refresh_data]}" />
+          </StackPanel>
+        </Button>
+      </Grid>
+
+      <TextBlock Grid.Row="1" Margin="14,0,14,4" Text="{Binding Message}" TextWrapping="Wrap"
+                 IsVisible="{Binding Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+      <Panel Grid.Row="2">
+        <TextBlock Classes="muted" Margin="14" Text="{Binding Loc[label_loading_mods]}" IsVisible="{Binding IsLoadingMods}" />
+        <TextBlock Classes="muted" Margin="14" Text="{Binding Loc[label_no_mods_found]}" IsVisible="{Binding IsEmpty}" />
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Mods}" Margin="6">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel ItemWidth="236" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:D2pfxModViewModel">
+                <Border Classes="card" Classes.active="{Binding IsEnabled}" Margin="6">
+                  <Grid RowDefinitions="120,*,Auto">
+                    <Button Padding="0" Background="{DynamicResource PreviewPlaceholderBrush}" CornerRadius="0"
+                            HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Cursor="Hand"
+                            Command="{Binding ShowPreviewCommand}" ToolTip.Tip="{Binding Loc[title_click_to_preview]}">
+                      <Panel>
+                        <TextBlock Classes="muted" Text="{Binding Loc[label_no_preview]}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Image Source="{Binding Preview}" Stretch="UniformToFill" />
+                      </Panel>
+                    </Button>
+                    <StackPanel Grid.Row="1" Margin="10,8,10,4" Spacing="2">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" />
+                      <TextBlock Classes="muted" FontSize="12" Text="{Binding Authors}" IsVisible="{Binding HasAuthors}"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Classes="muted" FontSize="12" Text="{Binding Tags}" IsVisible="{Binding HasTags}"
+                                 TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="10,4,10,10">
+                      <CheckBox IsChecked="{Binding IsEnabled}" IsVisible="{Binding IsInstalled}"
+                                IsEnabled="{Binding !InProgress}" ToolTip.Tip="{Binding Loc[label_enable_mod]}" />
+                      <Button Classes="accent" Content="{Binding InstallText}" Command="{Binding InstallCommand}"
+                              IsVisible="{Binding !IsInstalled}" />
+                      <Button Classes="accent" Content="{Binding UpdateText}" Command="{Binding UpdateCommand}"
+                              IsVisible="{Binding UpdateAvailable}" />
+                      <Button Content="{Binding RemoveText}" Command="{Binding RemoveCommand}"
+                              IsVisible="{Binding IsInstalled}" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Panel>
+    </Grid>
+
+    <!-- Preview lightbox -->
+    <Border Grid.ColumnSpan="2" Background="#CC000000" IsVisible="{Binding IsPreviewOpen}"
+            Tapped="OnPreviewTapped" Cursor="Hand" ToolTip.Tip="{Binding Loc[title_click_to_close]}">
+      <Grid RowDefinitions="Auto,*" Margin="24">
+        <TextBlock Foreground="White" FontWeight="SemiBold" Margin="0,0,0,12"
+                   Text="{Binding PreviewMod.Title, FallbackValue=''}" HorizontalAlignment="Center" />
+        <Image Grid.Row="1" Source="{Binding PreviewImage}" Stretch="Uniform" />
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

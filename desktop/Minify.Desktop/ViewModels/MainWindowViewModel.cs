@@ -22,7 +22,8 @@ public sealed partial class MainWindowViewModel(
     IDialogService dialogs,
     Func<Task<IBackend>> startBackend,
     IThemeService? themes = null,
-    IAnnouncementSource? announcements = null)
+    IAnnouncementSource? announcements = null,
+    IImageLoader? images = null)
     : ObservableObject, IAsyncDisposable
 {
     public const string WorkshopToolsReleasesUrl = "https://github.com/Dota-Modding-Community/workshoptools/releases";
@@ -299,7 +300,10 @@ public sealed partial class MainWindowViewModel(
         Pages.Add(SettingsPage);
         foreach (var plugin in await session.Backend.CallAsync<List<PluginInfo>>("get_plugins") ?? [])
         {
-            if (plugin.HasWebUi)
+            // Built-in plugins have native pages; other plugins' web pages can't be shown.
+            if (plugin.Id == D2pfxPageViewModel.PluginId && images is not null)
+                Pages.Add(new D2pfxPageViewModel(session, images, ModsPage.LoadAsync));
+            else if (plugin.HasWebUi)
                 Pages.Add(new WebPluginPageViewModel(session, plugin.Id, plugin.Name));
         }
         SelectedPage = ModsPage;

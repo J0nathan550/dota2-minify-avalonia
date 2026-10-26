@@ -4,6 +4,8 @@
              RequestedThemeVariant="Default">
   <Application.Resources>
     <ResourceDictionary>
+      <!-- Follows the accent color, including theme overrides of SystemAccentColor. -->
+      <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource SystemAccentColor}" />
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="/Views/Icons.axaml" />
       </ResourceDictionary.MergedDictionaries>
