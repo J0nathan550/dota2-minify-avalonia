@@ -16,8 +16,8 @@ public sealed class AppHomeTests : IDisposable
     public void Home_is_explicit_then_xdg_for_appimages_then_next_to_the_app()
     {
         Assert.Equal(Path.GetFullPath("/custom/home"), AppHome.Resolve(Env(("MINIFY_HOME", "/custom/home"), ("APPIMAGE", "/a.AppImage")), "/opt/app"));
-        Assert.Equal("/x/data/dota2-minify", AppHome.Resolve(Env(("APPIMAGE", "/a.AppImage"), ("XDG_DATA_HOME", "/x/data")), "/opt/app"));
-        Assert.Equal("/home/me/.local/share/dota2-minify", AppHome.Resolve(Env(("APPIMAGE", "/a.AppImage"), ("HOME", "/home/me")), "/opt/app"));
+        Assert.Equal(Path.Combine("/x/data", "dota2-minify"), AppHome.Resolve(Env(("APPIMAGE", "/a.AppImage"), ("XDG_DATA_HOME", "/x/data")), "/opt/app"));
+        Assert.Equal(Path.Combine("/home/me", ".local", "share", "dota2-minify"), AppHome.Resolve(Env(("APPIMAGE", "/a.AppImage"), ("HOME", "/home/me")), "/opt/app"));
         Assert.Equal(Path.Combine("/opt/app", "data"), AppHome.Resolve(Env(), "/opt/app"));
     }
 

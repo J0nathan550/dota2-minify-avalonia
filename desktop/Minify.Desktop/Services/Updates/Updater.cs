@@ -108,8 +108,10 @@ public sealed class Updater(HttpClient http, IReleaseFeed feed, Installation ins
 
         if (asset.Digest is { } digest && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
         {
-            await using var file = File.OpenRead(target);
-            var actual = Convert.ToHexStringLower(await SHA256.HashDataAsync(file, cancellationToken));
+            string actual;
+            // Closed before a possible delete: Windows can't delete a file that is still open.
+            await using (var file = File.OpenRead(target))
+                actual = Convert.ToHexStringLower(await SHA256.HashDataAsync(file, cancellationToken));
             if (!string.Equals(actual, digest["sha256:".Length..], StringComparison.OrdinalIgnoreCase))
             {
                 File.Delete(target);
