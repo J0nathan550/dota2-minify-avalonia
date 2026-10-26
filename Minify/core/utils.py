@@ -4,6 +4,7 @@ import functools
 import json
 import os
 import re
+import threading
 import uuid
 from pathlib import Path
 from typing import IO, Any
@@ -11,12 +12,13 @@ from typing import IO, Any
 from core import base, fs
 
 _real_open = builtins.open
+_states_lock = threading.RLock()  # UI API calls arrive on several threads
 
 
 def read_states() -> dict:
     if os.path.exists(base.states_file_dir):
         try:
-            with open_utf8R(base.states_file_dir) as f:
+            with _states_lock, open_utf8R(base.states_file_dir) as f:
                 return json.load(f)
         except (json.JSONDecodeError, OSError):
             return {}
@@ -24,15 +26,16 @@ def read_states() -> dict:
 
 
 def write_states(states_or_key: dict | str, value: Any = None) -> None:
-    states = read_states()
-    if isinstance(states_or_key, dict):
-        states.update(states_or_key)
-    elif isinstance(states_or_key, str):
-        states[states_or_key] = value
+    with _states_lock:
+        states = read_states()
+        if isinstance(states_or_key, dict):
+            states.update(states_or_key)
+        elif isinstance(states_or_key, str):
+            states[states_or_key] = value
 
-    fs.create_dirs(base.cache_dir)
-    with open_utf8R(base.states_file_dir, "w") as f:
-        json.dump(states, f, indent=2)
+        fs.create_dirs(base.cache_dir)
+        with open_utf8R(base.states_file_dir, "w") as f:
+            json.dump(states, f, indent=2)
 
 
 def get_state(mod_name: str, key: str, default=None):

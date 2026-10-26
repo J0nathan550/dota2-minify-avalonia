@@ -145,6 +145,24 @@ class Api:
     def set_game_language(self, lang: str) -> bool:
         return self.config_service.set_game_language(lang)
 
+    def get_steam_status(self) -> Dict[str, Any]:
+        from core import steam
+
+        library = config.get("steam_library", "")
+        dota_found = bool(library) and (
+            os.path.exists(os.path.join(library, base.DOTA_EXECUTABLE_PATH))
+            or os.path.exists(os.path.join(library, base.DOTA_EXECUTABLE_PATH_FALLBACK))
+        )
+        return {"root": steam.ROOT, "library": library, "dota_found": dota_found}
+
+    def set_steam_root(self, path: str) -> bool:
+        "Paths are resolved at import time, the frontend restarts the backend after this succeeds."
+        from core import steam
+
+        steam_root = os.path.normpath(path)
+        config.set("steam_root", steam_root)
+        return steam.find_library_from_vdf(steam_root)
+
     def get_steam_accounts(self) -> List[Dict[str, Any]]:
         return self.config_service.get_steam_accounts()
 

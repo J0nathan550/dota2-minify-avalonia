@@ -18,6 +18,7 @@ is_mac = True if OS == "Darwin" else False
 
 FROZEN = getattr(sys, "frozen", False)
 HEADLESS = True
+RPC = sys.argv[1:2] == ["rpc"]  # driven by the native frontend over stdio, nothing may prompt on its own
 
 OWNER = "Egezenn"
 REPO = "dota2-minify"

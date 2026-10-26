@@ -4,34 +4,38 @@ JSON(C) config files
 Interactions with main config and mod configs
 """
 
+import threading
 from typing import Any, Optional
 
 import jsonc
 
 from core import base, utils
 
+_lock = threading.RLock()  # UI API calls arrive on several threads
+
 
 def read_json_file(path: str) -> dict:
     try:
-        with utils.open_utf8R(path) as file:
+        with _lock, utils.open_utf8R(path) as file:
             return jsonc.load(file)
     except (FileNotFoundError, jsonc.JSONDecodeError):
         return {}
 
 
 def write_json_file(path: str, data: dict) -> None:
-    with utils.open_utf8R(path, "w") as file:
+    with _lock, utils.open_utf8R(path, "w") as file:
         jsonc.dump(data, file, indent=2)
 
 
 def update_json_file(path: str, key: str, value: Any) -> Any:
-    data = read_json_file(path)
-    data[key] = value
+    with _lock:
+        data = read_json_file(path)
+        data[key] = value
 
-    if path in (base.main_config_file_dir, base.mods_config_dir):
-        data = dict(sorted(data.items()))
+        if path in (base.main_config_file_dir, base.mods_config_dir):
+            data = dict(sorted(data.items()))
 
-    write_json_file(path, data)
+        write_json_file(path, data)
 
     return value
 

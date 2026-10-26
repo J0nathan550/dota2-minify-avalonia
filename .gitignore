@@ -103,3 +103,7 @@ venv.bak/
 venv/
 
 node_modules
+
+# Avalonia desktop app
+desktop/**/bin/
+desktop/**/obj/

@@ -1,11 +1,14 @@
 import os
 
 from core import utils
+from ui import bridge
 
 
 def pick_file(title="Select File", file_types=(), initial_dir=None):
     """Open a dialog to select a single file."""
     initial_dir = initial_dir or os.getcwd()
+    if bridge.active:
+        return bridge.active.request("pick_file", title=title, file_types=list(file_types), initial_dir=initial_dir)
     with utils.try_pass():
         import webview
 
@@ -40,6 +43,10 @@ def pick_file(title="Select File", file_types=(), initial_dir=None):
 def pick_files(title="Select Files", file_types=(), initial_dir=None):
     """Open a dialog to select multiple files."""
     initial_dir = initial_dir or os.getcwd()
+    if bridge.active:
+        return (
+            bridge.active.request("pick_files", title=title, file_types=list(file_types), initial_dir=initial_dir) or []
+        )
     with utils.try_pass():
         import webview
 
@@ -74,6 +81,8 @@ def pick_files(title="Select Files", file_types=(), initial_dir=None):
 def pick_folder(title="Select Folder", initial_dir=None):
     """Open a dialog to select a directory/folder."""
     initial_dir = initial_dir or os.getcwd()
+    if bridge.active:
+        return bridge.active.request("pick_folder", title=title, initial_dir=initial_dir)
     with utils.try_pass():
         import webview
 
@@ -106,6 +115,14 @@ def pick_folder(title="Select Folder", initial_dir=None):
 def pick_save_file(title="Save File", default_filename="", file_types=(), initial_dir=None):
     """Open a dialog to choose a file save location."""
     initial_dir = initial_dir or os.getcwd()
+    if bridge.active:
+        return bridge.active.request(
+            "pick_save_file",
+            title=title,
+            default_filename=default_filename,
+            file_types=list(file_types),
+            initial_dir=initial_dir,
+        )
     with utils.try_pass():
         import webview
 

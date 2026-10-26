@@ -9,6 +9,11 @@ from core import base
 
 base.original_cwd = os.getcwd()
 
+# `rpc` speaks JSON over stdout, so everything else printed goes to stderr
+rpc_stdout = None
+if base.RPC:
+    rpc_stdout, sys.stdout = sys.stdout, sys.stderr
+
 # Ensure root directories
 if getattr(sys, "frozen", False):
     os.chdir(os.path.dirname(os.path.realpath(sys.executable)))
@@ -89,12 +94,18 @@ def _main(
     ),
     host: bool = typer.Option(False, "--host", help="Host the UI on a local port and open it in the default browser."),
 ):
-    base.HEADLESS = ctx.invoked_subcommand is not None
+    base.HEADLESS = ctx.invoked_subcommand not in (None, "rpc")
     if ctx.invoked_subcommand not in ("config", "mods"):
         utils.setup_system()
 
     if ctx.invoked_subcommand is None:
         ui.launch(host=host)
+
+
+@app.command(name="rpc", hidden=True)
+def run_rpc():
+    """Serve the UI API as JSON over stdio for the native frontend."""
+    ui.bridge.serve(ui.Api(), rpc_stdout)
 
 
 @app.command(name="patch")

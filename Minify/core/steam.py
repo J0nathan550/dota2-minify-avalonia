@@ -362,6 +362,9 @@ def handle_non_default_path(steam_root):
         not os.path.exists(os.path.join(steam_library, base.DOTA_EXECUTABLE_PATH))
         and not os.path.exists(os.path.join(steam_library, base.DOTA_EXECUTABLE_PATH_FALLBACK))
     ):
+        if base.RPC:
+            break  # the frontend asks for the path and calls `set_steam_root`
+
         try:
             import tkinter as tk
             from tkinter import filedialog, messagebox

@@ -1,0 +1,26 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Minify.Desktop.App"
+             RequestedThemeVariant="Default">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFFFF" />
+          <SolidColorBrush x:Key="CardBorderBrush" Color="#1F000000" />
+          <SolidColorBrush x:Key="PreviewPlaceholderBrush" Color="#FFE9E9EE" />
+          <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FFF4F4F7" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FF26262B" />
+          <SolidColorBrush x:Key="CardBorderBrush" Color="#24FFFFFF" />
+          <SolidColorBrush x:Key="PreviewPlaceholderBrush" Color="#FF303036" />
+          <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FF1C1C20" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+</Application>

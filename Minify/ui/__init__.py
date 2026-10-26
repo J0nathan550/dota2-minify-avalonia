@@ -1,9 +1,11 @@
+from ui import bridge
 from ui.alerts import alert
 from ui.app import Api, is_webview2_installed, launch
 from ui.pickers import pick_file, pick_files, pick_folder, pick_save_file
 
 __all__ = [
     "Api",
+    "bridge",
     "launch",
     "is_webview_available",
     "is_webview2_installed",

@@ -1,6 +1,7 @@
 import json
 
 from core import localization, output, utils
+from ui import bridge
 
 
 def alert(text_or_id, *args, msg_type="info", title=None, **kwargs):
@@ -15,6 +16,10 @@ def alert(text_or_id, *args, msg_type="info", title=None, **kwargs):
     title = title or ("Error" if msg_type == "error" else "Warning" if msg_type == "warning" else "Notice")
 
     output.add_text(text_or_id, *args, msg_type=msg_type, **kwargs)
+
+    if bridge.active:
+        bridge.active.request("alert", text=text, title=title, msg_type=msg_type)
+        return
 
     with utils.try_pass():
         import webview
