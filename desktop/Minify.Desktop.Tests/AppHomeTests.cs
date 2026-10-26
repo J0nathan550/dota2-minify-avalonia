@@ -148,8 +148,9 @@ public sealed class AppHomeTests : IDisposable
         Assert.NotEqual(0, CliForwarder.Run(command.WithArguments(["patch", "--no-such-option"]), output, error));
 
         Assert.Matches(@"^\S+\s*$", output.ToString().Split('\n')[0]);
-        // Typer's error box wraps differently without a terminal, but always starts with the usage line.
-        Assert.Contains("Usage: Minify patch", error.ToString());
+        // Rich colors Typer's errors on CI (GITHUB_ACTIONS), so compare without ANSI escape codes.
+        var errorText = System.Text.RegularExpressions.Regex.Replace(error.ToString(), @"\x1b\[[0-9;]*m", "");
+        Assert.Contains("Usage: Minify patch", errorText);
     }
 
     private static void Write(string path, string content)
