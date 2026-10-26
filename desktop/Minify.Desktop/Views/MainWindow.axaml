@@ -61,6 +61,10 @@
             </Flyout>
           </Button.Flyout>
         </Button>
+        <Button Classes="icon" ToolTip.Tip="{Binding Loc[title_download_workshop_tools]}"
+                IsVisible="{Binding IsWorkshopMissing}" Command="{Binding DownloadWorkshopToolsCommand}">
+          <PathIcon Data="{StaticResource IconHammer}" />
+        </Button>
         <Button Classes="icon" ToolTip.Tip="Open config directory" Command="{Binding OpenConfigDirectoryCommand}">
           <PathIcon Data="{StaticResource IconFolder}" />
         </Button>

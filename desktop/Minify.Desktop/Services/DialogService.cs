@@ -14,7 +14,9 @@ public sealed record DialogRequest(
     string Text,
     IReadOnlyList<DialogButton> Buttons,
     string MsgType = "info",
-    string? OptionText = null);
+    string? OptionText = null,
+    IReadOnlyList<string>? Links = null,
+    string? Details = null);
 
 /// <summary>Which button closed the dialog (null when closed from the title bar) and the option checkbox state.</summary>
 public sealed record DialogResult(string? ButtonId, bool OptionChecked = false);

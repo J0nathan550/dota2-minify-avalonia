@@ -42,6 +42,22 @@ public sealed class Localizer : INotifyPropertyChanged
         ["placeholder_add_item"] = "Add item...",
         ["button_run"] = "Run",
         ["section_application_settings"] = "Application Settings",
+        ["title_announcement"] = "Announcement",
+        ["button_ok"] = "OK",
+        ["button_later"] = "Later",
+        ["button_ignore"] = "Ignore",
+        ["button_retry"] = "Retry",
+        ["button_skip"] = "No, Skip",
+        ["button_extract"] = "Yes, Extract",
+        ["button_import"] = "Import",
+        ["button_discard"] = "Discard",
+        ["title_download_workshop_tools"] = "Download Workshop Tools",
+        ["modal_workshop_tools_download_prompt"] = "Dota 2 Workshop Tools are not installed. Would you like to download it?",
+        ["title_extract_workshop_tools"] = "Extract Workshop Tools",
+        ["modal_workshop_tools_detected"] = "Dota 2 Workshop Tools is detected in your game files.",
+        ["modal_workshop_tools_prompt"] = "Would you like to extract them for later use?",
+        ["title_import_legacy_mods"] = "Import old mods",
+        ["modal_import_legacy_mods"] = "Old mods from a previous installation were found. Import them now? Entries that are not migrated will be deleted.",
     };
 
     private IReadOnlyDictionary<string, string> _strings = new Dictionary<string, string>();

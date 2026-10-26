@@ -20,7 +20,8 @@ public sealed class App : Application
             var viewModel = new MainWindowViewModel(
                 new DialogService(() => window),
                 async () => await BackendClient.StartAsync(BackendCommand.Resolve()),
-                new ThemeService());
+                new ThemeService(),
+                new HttpAnnouncementSource(Http.Client, HttpAnnouncementSource.DefaultUrl));
             window.DataContext = viewModel;
             desktop.MainWindow = window;
             var backendStopped = false;

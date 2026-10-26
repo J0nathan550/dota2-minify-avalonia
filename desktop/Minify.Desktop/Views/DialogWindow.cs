@@ -19,6 +19,7 @@ public sealed class DialogWindow : Window
         CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         ShowInTaskbar = false;
+        Bind(BackgroundProperty, this.GetResourceObservable("WindowBackgroundBrush"));
 
         var message = new SelectableTextBlock { Text = request.Text, TextWrapping = TextWrapping.Wrap };
         var accent = request.MsgType switch
@@ -33,6 +34,33 @@ public sealed class DialogWindow : Window
 
         var body = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
         body.Children.Add(message);
+
+        if (request.Details is not null)
+        {
+            body.Children.Add(new Border
+            {
+                Classes = { "code" },
+                Padding = new Thickness(10, 6),
+                MaxHeight = 200,
+                Child = new ScrollViewer
+                {
+                    Content = new SelectableTextBlock { Text = request.Details, Classes = { "log" } },
+                },
+            });
+        }
+
+        foreach (var link in request.Links ?? [])
+        {
+            if (Uri.TryCreate(link, UriKind.Absolute, out var uri))
+                body.Children.Add(new HyperlinkButton
+                {
+                    Content = new TextBlock { Text = link, TextTrimming = TextTrimming.CharacterEllipsis },
+                    NavigateUri = uri,
+                    Padding = new Thickness(0),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    MaxWidth = 400,
+                });
+        }
 
         if (request.OptionText is not null)
         {

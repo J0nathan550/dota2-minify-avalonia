@@ -46,6 +46,9 @@ public sealed class RealBackendTests
             Assert.NotNull(Minify.Desktop.ViewModels.SettingItemViewModel.Create(
                 spec, default, new(backend, loc, new FakeDialogs()), (_, _) => Task.CompletedTask));
         }
+        Assert.NotNull(await backend.CallAsync<List<string>>("get_legacy_mods"));
+        await backend.CallAsync<bool>("is_workshop_installed");
+        await backend.CallAsync<bool>("check_workshop_tools_needed");
         Assert.Contains("--bg-primary", Minify.Desktop.Services.ThemeCss.Parse(
             await backend.CallAsync<string>("get_theme_css", "dark") ?? "").Colors.Keys);
     }

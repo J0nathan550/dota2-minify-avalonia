@@ -19,9 +19,14 @@ public enum BackendState
 public sealed record HeaderLink(string Title, string Url, string Icon);
 
 public sealed partial class MainWindowViewModel(
-    IDialogService dialogs, Func<Task<IBackend>> startBackend, IThemeService? themes = null)
+    IDialogService dialogs,
+    Func<Task<IBackend>> startBackend,
+    IThemeService? themes = null,
+    IAnnouncementSource? announcements = null)
     : ObservableObject, IAsyncDisposable
 {
+    public const string WorkshopToolsReleasesUrl = "https://github.com/Dota-Modding-Community/workshoptools/releases";
+
     private IBackend? _backend;
     private bool _shuttingDown;
 
@@ -70,6 +75,10 @@ public sealed partial class MainWindowViewModel(
 
     public string PatchButtonText => IsPatching ? Loc["button_patching"] : Loc["button_patch"];
 
+    /// <summary>Workshop Tools aren't installed; the header offers to download them.</summary>
+    [ObservableProperty]
+    public partial bool IsWorkshopMissing { get; set; }
+
     partial void OnSelectedPageChanged(PageViewModel? value)
     {
         if (value is not null)
@@ -100,6 +109,7 @@ public sealed partial class MainWindowViewModel(
 
             await BuildPagesAsync(new AppSession(_backend, Loc, dialogs));
             IsPatching = await _backend.CallAsync<bool>("is_patching");
+            IsWorkshopMissing = !await _backend.CallAsync<bool>("is_workshop_installed");
             State = BackendState.Ready;
         }
         catch (Exception ex)
@@ -107,8 +117,123 @@ public sealed partial class MainWindowViewModel(
             Trace.WriteLine(ex);
             ErrorMessage = ex.Message;
             State = BackendState.Failed;
+            return;
+        }
+        await RunStartupPromptsAsync();
+    }
+
+    /// <summary>One prompt after another, like the web UI: old mods, announcements, then Workshop Tools.</summary>
+    private async Task RunStartupPromptsAsync()
+    {
+        try
+        {
+            await OfferLegacyModsImportAsync();
+            var announced = await ShowAnnouncementsAsync();
+            if (!announced && IsWorkshopMissing)
+                await OfferWorkshopToolsDownloadAsync(onStartup: true);
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine(ex);
         }
     }
+
+    private async Task OfferLegacyModsImportAsync()
+    {
+        var entries = await _backend!.CallAsync<List<string>>("get_legacy_mods") ?? [];
+        if (entries.Count == 0)
+            return;
+        var result = await dialogs.ShowAsync(new DialogRequest(
+            Loc["title_import_legacy_mods"],
+            Loc["modal_import_legacy_mods"],
+            [
+                new DialogButton("discard", Loc["button_discard"]),
+                new DialogButton("import", Loc["button_import"], IsDefault: true, IsAccent: true),
+            ],
+            Details: string.Join('\n', entries)));
+        // Closed without choosing: ask again next time.
+        if (result.ButtonId is null)
+            return;
+        var import = result.ButtonId == "import";
+        await _backend.CallAsync("import_legacy_mods", import);
+        if (import && ModsPage is not null)
+            await ModsPage.LoadAsync();
+    }
+
+    private async Task<bool> ShowAnnouncementsAsync()
+    {
+        if (announcements is null)
+            return false;
+        IReadOnlyList<Announcement> all;
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+            all = await announcements.FetchAsync(timeout.Token);
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"Announcements unavailable: {ex.Message}");
+            return false;
+        }
+
+        var seen = await _backend!.CallAsync<List<string>>("get_state", Announcements.SeenStateKey) ?? [];
+        var pending = Announcements.Pending(all, seen, DateTimeOffset.UtcNow, AppInfo.Version.ToString());
+        foreach (var announcement in pending)
+        {
+            await dialogs.ShowAsync(new DialogRequest(
+                announcement.Title ?? Loc["title_announcement"],
+                announcement.Text!,
+                [new DialogButton("ok", Loc["button_ok"], IsDefault: true, IsAccent: true)],
+                Links: announcement.AllUrls));
+            seen.Add(announcement.Id);
+            await _backend.CallAsync("set_state", Announcements.SeenStateKey, seen);
+        }
+        return pending.Count > 0;
+    }
+
+    /// <summary>Offers to download Workshop Tools; on startup it can also be ignored for good.</summary>
+    private async Task OfferWorkshopToolsDownloadAsync(bool onStartup)
+    {
+        if (onStartup && await _backend!.CallAsync<bool?>("get_state", "ignore_workshop_download") == true)
+            return;
+
+        string? error = null;
+        while (true)
+        {
+            List<DialogButton> buttons = error is not null
+                ? [new("close", Loc["button_close"], IsCancel: true), new("download", Loc["button_retry"], IsDefault: true, IsAccent: true)]
+                : onStartup
+                    ? [new("ignore", Loc["button_ignore"]), new("later", Loc["button_later"], IsCancel: true), new("download", Loc["button_ok"], IsDefault: true, IsAccent: true)]
+                    : [new("later", Loc["button_later"], IsCancel: true), new("download", Loc["button_ok"], IsDefault: true, IsAccent: true)];
+            var result = await dialogs.ShowAsync(new DialogRequest(
+                Loc["title_download_workshop_tools"],
+                Loc["modal_workshop_tools_download_prompt"],
+                buttons,
+                error is null ? "info" : "error",
+                Links: [WorkshopToolsReleasesUrl],
+                Details: error));
+
+            if (result.ButtonId == "ignore")
+            {
+                await _backend!.CallAsync("set_state", "ignore_workshop_download", true);
+                return;
+            }
+            if (result.ButtonId != "download")
+                return;
+
+            if (await _backend!.CallAsync<bool>("download_workshop_tools"))
+            {
+                IsWorkshopMissing = false;
+                if (ModsPage is not null)
+                    await ModsPage.LoadAsync();
+                return;
+            }
+            error = "Download or extraction failed. Check the Terminal for details.";
+        }
+    }
+
+    [RelayCommand]
+    private Task DownloadWorkshopToolsAsync() => OfferWorkshopToolsDownloadAsync(onStartup: false);
 
     public async Task LoadLocaleAsync(string locale)
     {
@@ -188,8 +313,25 @@ public sealed partial class MainWindowViewModel(
     [RelayCommand(CanExecute = nameof(CanRunOperation))]
     private async Task PatchAsync()
     {
+        // Workshop Tools found in the game files (Linux): offer to extract them before patching.
+        if (await _backend!.CallAsync<bool>("check_workshop_tools_needed"))
+        {
+            var result = await dialogs.ShowAsync(new DialogRequest(
+                Loc["title_extract_workshop_tools"],
+                $"{Loc["modal_workshop_tools_detected"]}\n\n{Loc["modal_workshop_tools_prompt"]}",
+                [
+                    new DialogButton("cancel", Loc["button_cancel"], IsCancel: true),
+                    new DialogButton("skip", Loc["button_skip"]),
+                    new DialogButton("extract", Loc["button_extract"], IsDefault: true, IsAccent: true),
+                ]));
+            if (result.ButtonId is not ("skip" or "extract"))
+                return;
+            SelectedPage = TerminalPage;
+            if (result.ButtonId == "extract")
+                await _backend.CallAsync("extract_workshop_tools");
+        }
         SelectedPage = TerminalPage;
-        await _backend!.CallAsync<OperationStatus>("start_patch");
+        await _backend.CallAsync<OperationStatus>("start_patch");
     }
 
     [RelayCommand(CanExecute = nameof(CanRunOperation))]

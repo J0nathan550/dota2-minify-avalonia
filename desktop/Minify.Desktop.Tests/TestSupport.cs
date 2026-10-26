@@ -73,6 +73,9 @@ public sealed class FakeBackend : IBackend
         .On("get_steam_status", new { root = "/steam", library = "/steam", dota_found = true })
         .On("get_logs", Array.Empty<object>())
         .On("is_patching", false)
+        .On("is_workshop_installed", true)
+        .On("check_workshop_tools_needed", false)
+        .On("get_legacy_mods", Array.Empty<string>())
         .On("get_plugins", new object[]
         {
             new { id = "d2pfx", name = "&tab_d2pfx", has_web_ui = false },
