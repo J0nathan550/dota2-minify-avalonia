@@ -123,3 +123,13 @@ def test_plugin_manifest_id_resolves_registry_name_folder(tmp_path):
         assert api.get_plugin_content("wiki-browser").endswith("Wiki</body></html>")
         result = api.call_plugin_api("wiki-browser", "ping")
         assert result["folder"].startswith(str(plugin_dir))
+
+
+def test_get_plugins_lists_unbuilt_plugins():
+    from ui import Api
+
+    found = {p["id"]: p for p in Api().get_plugins()}
+
+    assert {"d2pfx", "community"} <= set(found)
+    assert found["d2pfx"]["name"] == "&tab_d2pfx"
+    assert isinstance(found["d2pfx"]["has_web_ui"], bool)

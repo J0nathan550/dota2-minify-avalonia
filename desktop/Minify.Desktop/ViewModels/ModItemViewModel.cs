@@ -1,5 +1,6 @@
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Minify.Desktop.Backend;
 
 namespace Minify.Desktop.ViewModels;
@@ -27,6 +28,18 @@ public sealed partial class ModItemViewModel : ObservableObject
     public bool CanToggle { get; }
     public bool Untickable { get; }
     public Bitmap? Preview { get; }
+    public bool HasPreview => Preview is not null;
+
+    /// <summary>Shown in place of a missing preview, e.g. "D" for "#DevTools".</summary>
+    public string Initial
+    {
+        get
+        {
+            var trimmed = DisplayName.TrimStart('#', ' ', '_', '-');
+            var source = trimmed.Length > 0 ? trimmed : DisplayName;
+            return source.Length > 0 ? source[..1].ToUpperInvariant() : "?";
+        }
+    }
 
     [ObservableProperty]
     public partial bool IsEnabled { get; set; }
@@ -35,6 +48,13 @@ public sealed partial class ModItemViewModel : ObservableObject
     {
         if (!_syncing)
             _ = _persist(this, value);
+    }
+
+    [RelayCommand]
+    private void Toggle()
+    {
+        if (CanToggle)
+            IsEnabled = !IsEnabled;
     }
 
     /// <summary>Reverts the checkbox without writing back, e.g. after the backend rejected a change.</summary>

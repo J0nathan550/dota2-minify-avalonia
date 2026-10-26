@@ -72,6 +72,11 @@ public sealed class FakeBackend : IBackend
         .On("get_steam_status", new { root = "/steam", library = "/steam", dota_found = true })
         .On("get_logs", Array.Empty<object>())
         .On("is_patching", false)
+        .On("get_plugins", new object[]
+        {
+            new { id = "d2pfx", name = "&tab_d2pfx", has_web_ui = false },
+            new { id = "thirdparty", name = "Third Party", has_web_ui = true },
+        })
         .On("get_mods", new object[]
         {
             new { name = "Dark Terrain", display_name = "Dark Terrain", enabled = true, always = false, untickable = false, preview = (string?)null },
@@ -81,26 +86,31 @@ public sealed class FakeBackend : IBackend
 
 public sealed class FakeDialogs : IDialogService
 {
-    public bool ConfirmResult { get; set; } = true;
+    /// <summary>Decides how each dialog is answered; by default the default button is pressed.</summary>
+    public Func<DialogRequest, DialogResult> Answer { get; set; } =
+        r => new DialogResult(r.Buttons.FirstOrDefault(b => b.IsDefault)?.Id);
+
     public string? FolderResult { get; set; }
-    public List<(string Title, string Text, string Type)> Alerts { get; } = [];
-    public List<string> Confirms { get; } = [];
+    public List<DialogRequest> Shown { get; } = [];
+    public List<string> OpenedUrls { get; } = [];
+
+    public IEnumerable<DialogRequest> Alerts => Shown.Where(r => r.Buttons.Count == 1);
+
+    public Task<DialogResult> ShowAsync(DialogRequest request)
+    {
+        Shown.Add(request);
+        return Task.FromResult(Answer(request));
+    }
 
     public Task<object?> HandleBackendRequestAsync(string method, JsonElement parameters) =>
         Task.FromResult<object?>($"handled:{method}");
 
     public Task<string?> PickFolderAsync(string? title, string? initialDir = null) => Task.FromResult(FolderResult);
 
-    public Task AlertAsync(string title, string text, string msgType = "info")
+    public Task OpenUrlAsync(string url)
     {
-        Alerts.Add((title, text, msgType));
+        OpenedUrls.Add(url);
         return Task.CompletedTask;
-    }
-
-    public Task<bool> ConfirmAsync(string title, string text)
-    {
-        Confirms.Add(text);
-        return Task.FromResult(ConfirmResult);
     }
 }
 

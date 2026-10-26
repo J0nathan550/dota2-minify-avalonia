@@ -4,23 +4,39 @@
              RequestedThemeVariant="Default">
   <Application.Resources>
     <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="/Views/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
           <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFFFF" />
           <SolidColorBrush x:Key="CardBorderBrush" Color="#1F000000" />
           <SolidColorBrush x:Key="PreviewPlaceholderBrush" Color="#FFE9E9EE" />
           <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FFF4F4F7" />
+          <SolidColorBrush x:Key="MutedTextBrush" Color="#FF6B6B75" />
+          <SolidColorBrush x:Key="TerminalBackgroundBrush" Color="#FF1B1B1F" />
+          <SolidColorBrush x:Key="TerminalTextBrush" Color="#FFDCDCDC" />
+          <SolidColorBrush x:Key="LogErrorBrush" Color="#FFFF6B6B" />
+          <SolidColorBrush x:Key="LogWarningBrush" Color="#FFF0B35A" />
+          <SolidColorBrush x:Key="LogSuccessBrush" Color="#FF4CC38A" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
           <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FF26262B" />
           <SolidColorBrush x:Key="CardBorderBrush" Color="#24FFFFFF" />
           <SolidColorBrush x:Key="PreviewPlaceholderBrush" Color="#FF303036" />
           <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FF1C1C20" />
+          <SolidColorBrush x:Key="MutedTextBrush" Color="#FF9A9AA5" />
+          <SolidColorBrush x:Key="TerminalBackgroundBrush" Color="#FF0C0D0E" />
+          <SolidColorBrush x:Key="TerminalTextBrush" Color="#FFD4D4D4" />
+          <SolidColorBrush x:Key="LogErrorBrush" Color="#FFFF5555" />
+          <SolidColorBrush x:Key="LogWarningBrush" Color="#FFFFB86C" />
+          <SolidColorBrush x:Key="LogSuccessBrush" Color="#FF4CC38A" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
   </Application.Resources>
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="/Views/Styles.axaml" />
   </Application.Styles>
 </Application>

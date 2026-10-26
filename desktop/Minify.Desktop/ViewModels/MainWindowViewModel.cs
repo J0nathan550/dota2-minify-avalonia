@@ -16,19 +16,35 @@ public enum BackendState
     Failed,
 }
 
+public sealed record HeaderLink(string Title, string Url, string Icon);
+
 public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Task<IBackend>> startBackend)
     : ObservableObject, IAsyncDisposable
 {
-    public const int ModsTab = 0;
-    public const int TerminalTab = 1;
-
     private IBackend? _backend;
     private bool _shuttingDown;
-    private List<ModItemViewModel> _allMods = [];
 
     public Localizer Loc { get; } = new();
-    public ObservableCollection<ModItemViewModel> Mods { get; } = [];
-    public ObservableCollection<LogEntry> Logs { get; } = [];
+
+    public ObservableCollection<PageViewModel> Pages { get; } = [];
+
+    public ObservableCollection<DownloadItemViewModel> Downloads { get; } = [];
+
+    public IReadOnlyList<HeaderLink> Links { get; } =
+    [
+        new("Minify website", "https://egezenn.github.io/dota2-minify", "IconWeb"),
+        new("Wiki", "https://github.com/egezenn/dota2-minify/wiki", "IconBook"),
+        new("Discord", "https://discord.com/invite/9867CPv7cy", "IconChat"),
+        new("Telegram", "https://t.me/dota2minify", "IconSend"),
+        new("Buy Egezenn a coffee", "https://buymeacoffee.com/egezenn", "IconCoffee"),
+        new("Minify for Avalonia on GitHub", "https://github.com/J0nathan550/dota2-minify-avalonia", "IconGithub"),
+    ];
+
+    public ModsPageViewModel? ModsPage { get; private set; }
+    public TerminalPageViewModel? TerminalPage { get; private set; }
+
+    [ObservableProperty]
+    public partial PageViewModel? SelectedPage { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsReady), nameof(IsStarting), nameof(IsSteamMissing), nameof(IsFailed))]
@@ -52,16 +68,11 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
 
     public string PatchButtonText => IsPatching ? Loc["button_patching"] : Loc["button_patch"];
 
-    [ObservableProperty]
-    public partial int SelectedTab { get; set; } = ModsTab;
-
-    [ObservableProperty]
-    public partial string SearchText { get; set; } = "";
-
-    [ObservableProperty]
-    public partial string DownloadStatus { get; set; } = "";
-
-    partial void OnSearchTextChanged(string value) => ApplyFilter();
+    partial void OnSelectedPageChanged(PageViewModel? value)
+    {
+        if (value is not null)
+            _ = value.ActivateAsync();
+    }
 
     public async Task StartAsync()
     {
@@ -75,8 +86,7 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
             Version = _backend.BackendVersion;
 
             var locale = await _backend.CallAsync<string>("get_current_locale") ?? "en";
-            Loc.Load(await _backend.CallAsync<Dictionary<string, string>>("get_localization", locale) ?? []);
-            OnPropertyChanged(nameof(PatchButtonText));
+            await LoadLocaleAsync(locale);
 
             var steam = await _backend.CallAsync<SteamStatus>("get_steam_status");
             if (steam is { DotaFound: false })
@@ -85,11 +95,8 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
                 return;
             }
 
-            Logs.Clear();
-            foreach (var entry in await _backend.CallAsync<List<LogEntry>>("get_logs") ?? [])
-                AddLog(entry);
+            await BuildPagesAsync(new AppSession(_backend, Loc, dialogs));
             IsPatching = await _backend.CallAsync<bool>("is_patching");
-            await LoadModsAsync();
             State = BackendState.Ready;
         }
         catch (Exception ex)
@@ -100,32 +107,33 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
         }
     }
 
-    private async Task LoadModsAsync()
+    public async Task LoadLocaleAsync(string locale)
     {
-        var mods = await _backend!.CallAsync<List<ModInfo>>("get_mods") ?? [];
-        _allMods = mods.Select(m => new ModItemViewModel(m, PersistModStateAsync)).ToList();
-        ApplyFilter();
+        Loc.Load(await _backend!.CallAsync<Dictionary<string, string>>("get_localization", locale) ?? []);
+        OnPropertyChanged(nameof(PatchButtonText));
+        foreach (var page in Pages)
+            page.RefreshTitle();
     }
 
-    private void ApplyFilter()
+    private async Task BuildPagesAsync(AppSession session)
     {
-        Mods.Clear();
-        foreach (var mod in _allMods.Where(m =>
-                     m.DisplayName.Contains(SearchText, StringComparison.OrdinalIgnoreCase)))
-            Mods.Add(mod);
-    }
+        ModsPage = new ModsPageViewModel(session);
+        TerminalPage = new TerminalPageViewModel(session);
+        await ModsPage.LoadAsync();
+        foreach (var entry in await session.Backend.CallAsync<List<LogEntry>>("get_logs") ?? [])
+            TerminalPage.Add(entry);
 
-    private async Task PersistModStateAsync(ModItemViewModel mod, bool enabled)
-    {
-        try
+        Pages.Clear();
+        Pages.Add(ModsPage);
+        Pages.Add(TerminalPage);
+        foreach (var plugin in await session.Backend.CallAsync<List<PluginInfo>>("get_plugins") ?? [])
         {
-            await _backend!.CallAsync("set_mods", new Dictionary<string, bool> { [mod.Name] = enabled });
+            if (plugin.HasWebUi)
+                Pages.Add(new WebPluginPageViewModel(session, plugin.Id, plugin.Name));
         }
-        catch (Exception ex)
-        {
-            mod.SetEnabledSilently(!enabled);
-            await dialogs.AlertAsync("Minify", ex.Message, "error");
-        }
+        SelectedPage = ModsPage;
+        OnPropertyChanged(nameof(ModsPage));
+        OnPropertyChanged(nameof(TerminalPage));
     }
 
     private bool CanRunOperation() => !IsPatching;
@@ -133,25 +141,45 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
     [RelayCommand(CanExecute = nameof(CanRunOperation))]
     private async Task PatchAsync()
     {
-        SelectedTab = TerminalTab;
+        SelectedPage = TerminalPage;
         await _backend!.CallAsync<OperationStatus>("start_patch");
     }
 
     [RelayCommand(CanExecute = nameof(CanRunOperation))]
     private async Task UninstallAsync()
     {
-        if (!await dialogs.ConfirmAsync(Loc["title_uninstall_mods"], Loc["modal_uninstall_message"]))
+        var result = await dialogs.ShowAsync(new DialogRequest(
+            Loc["title_uninstall_mods"],
+            Loc["modal_uninstall_message"],
+            [
+                new DialogButton("cancel", Loc["button_cancel"], IsCancel: true),
+                new DialogButton("yes", Loc["button_yes"], IsDefault: true, IsAccent: true),
+            ],
+            "warning",
+            Loc["label_remove_everything"]));
+        if (result.ButtonId != "yes")
             return;
-        SelectedTab = TerminalTab;
-        await _backend!.CallAsync<OperationStatus>("start_uninstall", false);
+        SelectedPage = TerminalPage;
+        await _backend!.CallAsync<OperationStatus>("start_uninstall", result.OptionChecked);
     }
 
     [RelayCommand]
-    private async Task ClearLogsAsync()
+    private Task OpenConfigDirectoryAsync() => _backend!.CallAsync("open_config_directory");
+
+    [RelayCommand]
+    private Task OpenLinkAsync(string url) => dialogs.OpenUrlAsync(url);
+
+    [RelayCommand]
+    private void CycleTab(bool forward)
     {
-        await _backend!.CallAsync("clear_logs");
-        Logs.Clear();
+        if (Pages.Count == 0)
+            return;
+        var index = SelectedPage is null ? -1 : Pages.IndexOf(SelectedPage);
+        SelectedPage = Pages[(index + (forward ? 1 : -1) + Pages.Count) % Pages.Count];
     }
+
+    [RelayCommand]
+    private void DismissDownload(DownloadItemViewModel item) => Downloads.Remove(item);
 
     [RelayCommand]
     private async Task LocateSteamAsync()
@@ -180,37 +208,36 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
         switch (name)
         {
             case "onLogReceived":
-                var entry = data.Deserialize<LogEntry>(BackendJson.Options);
-                if (entry is { Type: "clear" })
-                    Logs.Clear();
-                else if (entry is not null)
-                    AddLog(entry);
+                if (data.Deserialize<LogEntry>(BackendJson.Options) is { } entry)
+                    TerminalPage?.Add(entry);
                 break;
             case "onPatchStatusChange":
                 IsPatching = data.ValueKind == JsonValueKind.True;
                 break;
             case "onDownloadProgress":
-                DownloadStatus = FormatDownload(data);
+                OnDownloadProgress(data);
                 break;
         }
     }
 
-    private void AddLog(LogEntry entry)
+    private void OnDownloadProgress(JsonElement data)
     {
-        Logs.Add(entry);
-        while (Logs.Count > 5000)
-            Logs.RemoveAt(0);
+        var id = data.GetProperty("id").GetString() ?? "";
+        var item = Downloads.FirstOrDefault(d => d.Id == id);
+        if (item is null)
+        {
+            item = new DownloadItemViewModel(id, Loc);
+            Downloads.Add(item);
+        }
+        item.Update(data);
+        if (!item.IsDownloading)
+            _ = DismissLaterAsync(item);
     }
 
-    private static string FormatDownload(JsonElement data)
+    private async Task DismissLaterAsync(DownloadItemViewModel item)
     {
-        var name = data.GetProperty("name").GetString();
-        var status = data.GetProperty("status").GetString();
-        if (status != "downloading")
-            return "";
-        var done = data.GetProperty("downloaded_bytes").GetInt64();
-        var total = data.GetProperty("total_bytes").GetInt64();
-        return total > 0 ? $"{name} {done * 100 / total}%" : $"{name} {done / 1024 / 1024} MB";
+        await Task.Delay(TimeSpan.FromSeconds(3.5));
+        Downloads.Remove(item);
     }
 
     private void OnBackendExited(int exitCode)

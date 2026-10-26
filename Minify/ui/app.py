@@ -332,6 +332,9 @@ class Api:
             )
             return False
 
+    def get_plugins(self) -> List[Dict[str, Any]]:
+        return self.plugin_service.get_plugins()
+
     def get_plugin_tabs(self) -> List[Dict[str, Any]]:
         return self.plugin_service.get_tabs(resolve_func=self._resolve_plugin_entry)
 

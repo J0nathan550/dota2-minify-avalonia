@@ -6,17 +6,55 @@ using Minify.Desktop.Views;
 
 namespace Minify.Desktop.Services;
 
+public sealed record DialogButton(string Id, string Label, bool IsDefault = false, bool IsCancel = false, bool IsAccent = false);
+
+public sealed record DialogRequest(
+    string Title,
+    string Text,
+    IReadOnlyList<DialogButton> Buttons,
+    string MsgType = "info",
+    string? OptionText = null);
+
+/// <summary>Which button closed the dialog (null when closed from the title bar) and the option checkbox state.</summary>
+public sealed record DialogResult(string? ButtonId, bool OptionChecked = false);
+
 public interface IDialogService
 {
+    Task<DialogResult> ShowAsync(DialogRequest request);
     Task<object?> HandleBackendRequestAsync(string method, JsonElement parameters);
     Task<string?> PickFolderAsync(string? title, string? initialDir = null);
-    Task AlertAsync(string title, string text, string msgType = "info");
-    Task<bool> ConfirmAsync(string title, string text);
+    Task OpenUrlAsync(string url);
+}
+
+public static class DialogServiceExtensions
+{
+    public static Task AlertAsync(this IDialogService dialogs, string title, string text, string msgType = "info") =>
+        dialogs.ShowAsync(new DialogRequest(title, text, [new DialogButton("ok", "OK", IsDefault: true, IsAccent: true)], msgType));
+
+    public static async Task<bool> ConfirmAsync(
+        this IDialogService dialogs, string title, string text, string yes = "OK", string cancel = "Cancel")
+    {
+        var result = await dialogs.ShowAsync(new DialogRequest(title, text,
+        [
+            new DialogButton("cancel", cancel, IsCancel: true),
+            new DialogButton("yes", yes, IsDefault: true, IsAccent: true),
+        ], "warning"));
+        return result.ButtonId == "yes";
+    }
 }
 
 /// <summary>Native dialogs, used by the UI and to answer the backend's ui.pick_* / ui.alert requests.</summary>
 public sealed partial class DialogService(Func<Window> owner) : IDialogService
 {
+    public async Task<DialogResult> ShowAsync(DialogRequest request) =>
+        await new DialogWindow(request).ShowDialog<DialogResult?>(owner()) ?? new DialogResult(null);
+
+    public async Task OpenUrlAsync(string url)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            await owner().Launcher.LaunchUriAsync(uri);
+    }
+
     public async Task<object?> HandleBackendRequestAsync(string method, JsonElement p)
     {
         var title = Str(p, "title");
@@ -34,7 +72,7 @@ public sealed partial class DialogService(Func<Window> owner) : IDialogService
             case "pick_save_file":
                 return await PickSaveFileAsync(title, Str(p, "default_filename"), fileTypes, initialDir);
             case "alert":
-                await AlertAsync(Str(p, "title") ?? "Minify", Str(p, "text") ?? "", Str(p, "msg_type") ?? "info");
+                await this.AlertAsync(Str(p, "title") ?? "Minify", Str(p, "text") ?? "", Str(p, "msg_type") ?? "info");
                 return null;
             default:
                 throw new NotSupportedException($"Unknown backend request: {method}");
@@ -79,12 +117,6 @@ public sealed partial class DialogService(Func<Window> owner) : IDialogService
         });
         return file?.TryGetLocalPath();
     }
-
-    public Task AlertAsync(string title, string text, string msgType = "info") =>
-        new MessageDialog(title, text, msgType, confirm: false).ShowDialog<bool>(owner());
-
-    public Task<bool> ConfirmAsync(string title, string text) =>
-        new MessageDialog(title, text, "warning", confirm: true).ShowDialog<bool>(owner());
 
     private static async Task<IStorageFolder?> TryGetFolderAsync(IStorageProvider storage, string? path) =>
         string.IsNullOrEmpty(path) || !Directory.Exists(path) ? null : await storage.TryGetFolderFromPathAsync(path);

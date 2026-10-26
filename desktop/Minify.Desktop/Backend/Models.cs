@@ -15,3 +15,5 @@ public sealed record LogEntry(string Text, string Type, string? Timestamp);
 public sealed record SteamStatus(string Root, string Library, bool DotaFound);
 
 public sealed record OperationStatus(string Status);
+
+public sealed record PluginInfo(string Id, string Name, bool HasWebUi);

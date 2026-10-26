@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Minify.Desktop.ViewModels"
+             x:Class="Minify.Desktop.Views.WebPluginPage"
+             x:DataType="vm:WebPluginPageViewModel">
+  <StackPanel MaxWidth="460" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <TextBlock Classes="h2" Text="{Binding Title}" />
+    <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+  </StackPanel>
+</UserControl>

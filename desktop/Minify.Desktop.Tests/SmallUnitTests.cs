@@ -100,3 +100,31 @@ public sealed class BackendCommandTests : IDisposable
 
 [CollectionDefinition(nameof(EnvironmentCollection), DisableParallelization = true)]
 public sealed class EnvironmentCollection;
+
+public sealed class LocalizerFormatTests
+{
+    [Fact]
+    public void Format_fills_python_style_placeholders()
+    {
+        var loc = new Localizer();
+        loc.Load(new Dictionary<string, string> { ["x"] = "Extracting: {0}", ["broken"] = "50% {done" });
+
+        Assert.Equal("Extracting: a.vpk", loc.Format("x", "a.vpk"));
+        Assert.Equal("50% {done", loc.Format("broken", 1));
+    }
+}
+
+public sealed class ModItemTests
+{
+    [Theory]
+    [InlineData("#DevTools", "D")]
+    [InlineData("dark Terrain", "D")]
+    [InlineData("###", "#")]
+    [InlineData("", "?")]
+    public void Initial_skips_leading_symbols(string name, string expected)
+    {
+        var mod = new Minify.Desktop.ViewModels.ModItemViewModel(
+            new ModInfo(name, name, false, false, false, null), (_, _) => Task.CompletedTask);
+        Assert.Equal(expected, mod.Initial);
+    }
+}

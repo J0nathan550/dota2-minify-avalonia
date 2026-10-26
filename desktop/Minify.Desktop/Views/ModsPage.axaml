@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Minify.Desktop.ViewModels"
+             xmlns:views="using:Minify.Desktop.Views"
+             x:Class="Minify.Desktop.Views.ModsPage"
+             x:DataType="vm:ModsPageViewModel">
+  <Grid RowDefinitions="Auto,*">
+    <Grid ColumnDefinitions="*,Auto,Auto" Margin="12,8,12,4">
+      <TextBlock Classes="h2" Text="{Binding Loc[title_mods]}" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Margin="0,0,8,0" Command="{Binding RefreshCommand}"
+              IsEnabled="{Binding !IsRefreshing}" ToolTip.Tip="{Binding Loc[button_refresh]}">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" />
+          <TextBlock Text="{Binding Loc[button_refresh]}" />
+        </StackPanel>
+      </Button>
+      <Grid Grid.Column="2" ColumnDefinitions="*,Auto" Width="260">
+        <TextBox PlaceholderText="{Binding Loc[placeholder_search_mods]}" Text="{Binding SearchText}" />
+        <Button Grid.Column="1" Classes="icon" Margin="2,0,0,0" Command="{Binding ClearSearchCommand}"
+                IsVisible="{Binding SearchText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                ToolTip.Tip="{Binding Loc[button_clear]}">
+          <PathIcon Data="{StaticResource IconClose}" />
+        </Button>
+      </Grid>
+    </Grid>
+
+    <ScrollViewer Grid.Row="1">
+      <ItemsControl ItemsSource="{Binding Mods}" Margin="6">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel ItemWidth="220" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ModItemViewModel">
+            <Border Classes="card" Margin="6" Cursor="Hand" Tapped="OnCardTapped"
+                    Opacity="{Binding CanToggle, Converter={x:Static views:ModsPage.EnabledOpacity}}">
+              <Grid RowDefinitions="110,Auto">
+                <Border Background="{DynamicResource PreviewPlaceholderBrush}">
+                  <Panel>
+                    <TextBlock Text="{Binding Initial}" FontSize="44" FontWeight="Bold" Opacity="0.35"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsVisible="{Binding !HasPreview}" />
+                    <Image Source="{Binding Preview}" Stretch="UniformToFill" />
+                  </Panel>
+                </Border>
+                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="10,4,4,4">
+                  <CheckBox IsChecked="{Binding IsEnabled}" IsEnabled="{Binding CanToggle}">
+                    <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding DisplayName}" />
+                  </CheckBox>
+                </Grid>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

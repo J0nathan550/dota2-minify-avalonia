@@ -1,26 +1,15 @@
-using System.Collections.Specialized;
+using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Threading;
-using Minify.Desktop.ViewModels;
+using Avalonia.Data.Converters;
+using Avalonia.Media;
 
 namespace Minify.Desktop.Views;
 
 public sealed partial class MainWindow : Window
 {
-    public MainWindow()
-    {
-        InitializeComponent();
-        DataContextChanged += (_, _) =>
-        {
-            if (DataContext is MainWindowViewModel vm)
-                vm.Logs.CollectionChanged += ScrollLogToEnd;
-        };
-    }
+    /// <summary>Looks up an icon geometry from Views/Icons.axaml by its key.</summary>
+    public static readonly IValueConverter IconByKey = new FuncValueConverter<string, Geometry?>(key =>
+        key is not null && Application.Current!.TryGetResource(key, null, out var icon) ? icon as Geometry : null);
 
-    private void ScrollLogToEnd(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (e.Action != NotifyCollectionChangedAction.Add || LogList.ItemCount == 0)
-            return;
-        Dispatcher.UIThread.Post(() => LogList.ScrollIntoView(LogList.ItemCount - 1), DispatcherPriority.Background);
-    }
+    public MainWindow() => InitializeComponent();
 }

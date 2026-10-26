@@ -80,6 +80,30 @@ class PluginService:
                             )
         return tabs
 
+    def get_plugins(self) -> List[Dict[str, Any]]:
+        "Every plugin with a manifest, whether or not it has a built web UI."
+        plugins = []
+        plugins_dir = base.plugins_dir
+        if not os.path.isdir(plugins_dir):
+            return plugins
+        for p_name in sorted(os.listdir(plugins_dir)):
+            if mods_shared.is_ignored_folder(p_name):
+                continue
+            p_path = os.path.join(plugins_dir, p_name)
+            manifest_path = os.path.join(p_path, "manifest.json")
+            if not os.path.isfile(manifest_path):
+                continue
+            manifest = config.read_json_file(manifest_path)
+            if isinstance(manifest, dict) and manifest.get("id") and manifest.get("name"):
+                plugins.append(
+                    {
+                        "id": manifest["id"],
+                        "name": manifest["name"],
+                        "has_web_ui": self._resolve_plugin_entry(p_path) is not None,
+                    }
+                )
+        return plugins
+
     def get_content(self, plugin_id: str) -> str:
         p_path = self._find_plugin_path(plugin_id)
         if p_path:
