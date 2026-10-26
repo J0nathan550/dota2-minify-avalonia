@@ -52,16 +52,23 @@ Tests are expected with every change: `uv run pytest` for the backend and `dotne
 ## Building the application
 
 ```shell
-uv run scripts/build.py
+uv run python scripts/package.py --version 1.0.0.1
 ```
 
-args:
+Builds the Python backend (PyInstaller) and the desktop app (self-contained .NET) and packages them for the current
+platform into `dist/`: `Minify-<version>-linux-x86_64.AppImage` on Linux, `Minify-<version>-win-x64.zip` on Windows.
 
-- `-s`: symlinking instead of copy
-- `--no-plugins`: build without any plugin integrations
-- `--clean`: clean output folders
-- `--skip-npm`, `--skip-pyinstaller`: skip build steps
-- `--setup`: create a setup file
+- `--skip-backend`: reuse the backend from a previous run
+- `--folder-only`: stop after assembling `build/package/<runtime>` (no AppImage/zip)
+
+## Releases
+
+Every push to `main` that passes the tests is released by `.github/workflows/release.yml`:
+
+- **Version**: 4-part, counted like an odometer from the latest `v*` tag: `1.0.0.1`, ..., `1.0.0.9`, `1.0.1.0`, ..., `1.9.9.9`, `2.0.0.0` (`scripts/release_version.py`).
+- **Release notes**: the commits since the previous release.
+- **Packages**: the Linux AppImage and the Windows zip, each checked by `scripts/e2e_update.py`, which installs an older build and makes it update itself to the new package.
+- **Updates**: the app checks the latest release on startup and updates itself (the AppImage file, or the Windows app folder).
 
 ## Mod Development
 

@@ -1,328 +1,120 @@
 name: Release
 
+# Every push to main that passes the tests becomes a release: the version is the next one after the latest
+# v* tag (1.0.0.9 -> 1.0.1.0, see scripts/release_version.py) and the notes list the commits since then.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      release_name:
-        description: "Name the release"
-        required: true
-        default: "Minify-v2." # DEPRECATE: bad tag name
-      prerelease:
-        description: "Whether or not release candidate"
-        required: true
-        type: choice
-        options:
-          - true
-          - false
-        default: "true"
-      signing_policy:
-        description: "Signing policy"
-        required: true
-        type: choice
-        options:
-          - release-signing
-          - test-signing
-        default: "release-signing"
-      upload_artifacts:
-        description: "Upload built packages as workflow artifacts"
-        required: true
-        type: boolean
-        default: false
-      build_installer:
-        description: "Build the Windows installer"
-        required: true
-        type: boolean
-        default: true
-      build_portable:
-        description: "Build the Windows portable executable"
-        required: true
-        type: boolean
-        default: true
-      build_linux:
-        description: "Build the Linux package"
-        required: true
-        type: boolean
-        default: true
+
+# One release at a time, so versions are handed out in order.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
-  actions: read
+
+env:
+  # Last commit of the upstream project; the first release lists the commits after it.
+  FIRST_RELEASE_BASE: 13366a7
 
 jobs:
-  build-windows:
-    if: ${{ inputs.build_installer || inputs.build_portable }}
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          python-version: "3.13"
-      - name: Install dependencies
-        run: uv sync
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install Web UI dependencies
-        run: |
-          cd Minify/ui/web
-          npm ci
-      - name: Build executable and package release assets
-        run: uv run python scripts/build.py
-      - name: Upload unsigned Windows bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-bundle
-          path: scripts/dist/Minify
+  test:
+    uses: ./.github/workflows/ci.yml
 
-  sign-minify:
-    needs: build-windows
-    runs-on: windows-latest
-    steps:
-      - name: Download unsigned Windows bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-bundle
-          path: scripts/dist/Minify
-      - name: Upload unsigned Minify binary
-        id: upload-unsigned-minify
-        uses: actions/upload-artifact@v4
-        with:
-          name: unsigned-minify
-          path: scripts/dist/Minify/Minify.exe
-      - name: Sign Minify.exe via SignPath
-        uses: signpath/github-action-submit-signing-request@v3
-        with:
-          api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
-          organization-id: "${{ secrets.SIGNPATH_ORGANIZATION_ID }}"
-          project-slug: "dota2-minify"
-          signing-policy-slug: "${{ github.event.inputs.signing_policy }}"
-          artifact-configuration-slug: "dota2-minify-binary"
-          github-artifact-id: "${{ steps.upload-unsigned-minify.outputs.artifact-id }}"
-          wait-for-completion: true
-          output-artifact-directory: "signed-minify"
-      - name: Copy signed Minify binary
-        shell: pwsh
-        run: |
-          Copy-Item -Path signed-minify/Minify.exe -Destination scripts/dist/Minify/Minify.exe -Force
-      - name: Upload signed Windows bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: signed-windows-bundle
-          path: scripts/dist/Minify
-
-  package-windows:
-    if: ${{ inputs.build_installer || inputs.build_portable }}
-    needs: sign-minify
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download signed Windows bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: signed-windows-bundle
-          path: scripts/dist/Minify
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          python-version: "3.13"
-      - name: Build Windows packages
-        run: |
-          if ("${{ inputs.build_installer }}" -eq "true") {
-            uv run python scripts/build.py --skip-npm --skip-pyinstaller --setup-installer
-          }
-          if ("${{ inputs.build_portable }}" -eq "true") {
-            uv run python scripts/build.py --skip-npm --skip-pyinstaller --setup-portable
-          }
-      - name: Upload unsigned installer
-        if: ${{ inputs.build_installer }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: unsigned-installer-package
-          path: scripts/Minify-Setup-*.exe
-      - name: Upload unsigned portable package
-        if: ${{ inputs.build_portable }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: unsigned-portable-package
-          path: scripts/Minify-Portable-*.exe
-
-  sign-installer:
-    if: ${{ inputs.build_installer }}
-    needs: package-windows
-    runs-on: windows-latest
-    steps:
-      - name: Download unsigned Windows packages
-        uses: actions/download-artifact@v4
-        with:
-          name: unsigned-installer-package
-          path: scripts
-      - name: Upload unsigned installer
-        id: upload-unsigned-installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: unsigned-installer
-          path: scripts/Minify-Setup-*.exe
-      - name: Sign installer via SignPath
-        uses: signpath/github-action-submit-signing-request@v3
-        with:
-          api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
-          organization-id: "${{ secrets.SIGNPATH_ORGANIZATION_ID }}"
-          project-slug: "dota2-minify"
-          signing-policy-slug: "${{ github.event.inputs.signing_policy }}"
-          artifact-configuration-slug: "dota2-minify-installer"
-          github-artifact-id: "${{ steps.upload-unsigned-installer.outputs.artifact-id }}"
-          wait-for-completion: true
-          output-artifact-directory: "signed-installer"
-      - name: Upload signed installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: signed-installer
-          path: signed-installer/*.exe
-
-  sign-portable:
-    if: ${{ inputs.build_portable }}
-    needs: package-windows
-    runs-on: windows-latest
-    steps:
-      - name: Download unsigned Windows packages
-        uses: actions/download-artifact@v4
-        with:
-          name: unsigned-portable-package
-          path: scripts
-      - name: Upload unsigned portable executable
-        id: upload-unsigned-portable
-        uses: actions/upload-artifact@v4
-        with:
-          name: unsigned-portable
-          path: scripts/Minify-Portable-*.exe
-      - name: Sign portable executable via SignPath
-        uses: signpath/github-action-submit-signing-request@v3
-        with:
-          api-token: "${{ secrets.SIGNPATH_API_TOKEN }}"
-          organization-id: "${{ secrets.SIGNPATH_ORGANIZATION_ID }}"
-          project-slug: "dota2-minify"
-          signing-policy-slug: "${{ github.event.inputs.signing_policy }}"
-          artifact-configuration-slug: "dota2-minify-installer"
-          github-artifact-id: "${{ steps.upload-unsigned-portable.outputs.artifact-id }}"
-          wait-for-completion: true
-          output-artifact-directory: "signed-portable"
-      - name: Upload signed portable executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: signed-portable
-          path: signed-portable/*.exe
-
-  publish-windows:
-    if: ${{ always() && (inputs.build_installer || inputs.build_portable) }}
-    needs: [sign-installer, sign-portable]
-    runs-on: windows-latest
-    steps:
-      - name: Download signed installer
-        if: ${{ inputs.build_installer }}
-        uses: actions/download-artifact@v4
-        with:
-          name: signed-installer
-          path: scripts
-      - name: Download signed portable executable
-        if: ${{ inputs.build_portable }}
-        uses: actions/download-artifact@v4
-        with:
-          name: signed-portable
-          path: scripts
-      - name: Upload Windows packages as workflow artifacts
-        if: ${{ inputs.upload_artifacts }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-packages
-          path: |
-            ${{ inputs.build_installer && 'scripts/Minify-Setup-*.exe' || '' }}
-            ${{ inputs.build_portable && 'scripts/Minify-Portable-*.exe' || '' }}
-      - name: Publish GitHub release
-        if: ${{ !inputs.upload_artifacts }}
-        uses: softprops/action-gh-release@v1
-        with:
-          prerelease: ${{ inputs.prerelease }}
-          tag_name: ${{ inputs.release_name }}
-          files: |
-            ${{ inputs.build_installer && 'scripts/Minify-Setup-*.exe' || '' }}
-            ${{ inputs.build_portable && 'scripts/Minify-Portable-*.exe' || '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish Codeberg release
-        if: ${{ !inputs.upload_artifacts }}
-        continue-on-error: true
-        uses: akkuman/gitea-release-action@v1
-        with:
-          server_url: https://codeberg.org
-          token: ${{ secrets.CODEBERG_TOKEN }}
-          tag_name: ${{ inputs.release_name }}
-          files: |
-            ${{ inputs.build_installer && 'scripts/Minify-Setup-*.exe' || '' }}
-            ${{ inputs.build_portable && 'scripts/Minify-Portable-*.exe' || '' }}
-          prerelease: ${{ inputs.prerelease }}
-
-  build-linux:
-    if: ${{ inputs.build_linux }}
+  version:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.next.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute version and release notes
+        id: next
+        run: |
+          version=$(python3 scripts/release_version.py next)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          python3 scripts/release_version.py notes --base "$FIRST_RELEASE_BASE" > release-notes.md
+          echo "Releasing $version"
+          cat release-notes.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+
+  build:
+    needs: [test, version]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Oldest supported runner, so the AppImage runs on older glibc versions too.
+          - os: ubuntu-22.04
+            runtime: linux-x64
+            suffix: linux-x86_64.AppImage
+          - os: windows-latest
+            runtime: win-x64
+            suffix: win-x64.zip
+    runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           python-version: "3.13"
-      - name: Install dependencies
-        run: uv sync
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+
+      - name: Install Python dependencies
+        run: uv sync --group dev
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
         with:
-          node-version: "20"
-      - name: Install Web UI dependencies
-        run: |
-          cd Minify/ui/web
-          npm ci
-      - name: Build executable and package release assets
-        run: uv run python scripts/build.py
-      - name: Bundle Portable Release
-        run: |
-          cd scripts/dist/Minify
-          7z a -tzip -mm=lzma -mx=9 "../../../${{ github.event.inputs.release_name }}-linux.zip" ./*
-          cd ../../..
+          dotnet-version: "10.0.x"
+
+      - name: Build release package
+        run: uv run python scripts/package.py --version ${{ env.VERSION }} --runtime ${{ matrix.runtime }}
+
+      # An older build that has to update itself to the package above.
+      - name: Build baseline package for the update test
+        run: uv run python scripts/package.py --version 1.0.0.0 --runtime ${{ matrix.runtime }} --skip-backend
+
+      - name: End-to-end self-update test
+        run: >
+          uv run python scripts/e2e_update.py
+          --old dist/Minify-1.0.0.0-${{ matrix.suffix }} --old-version 1.0.0.0
+          --new dist/Minify-${{ env.VERSION }}-${{ matrix.suffix }} --new-version ${{ env.VERSION }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.runtime }}
+          path: dist/Minify-${{ env.VERSION }}-${{ matrix.suffix }}
+          if-no-files-found: error
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
       - name: Publish GitHub release
-        if: ${{ !inputs.upload_artifacts }}
-        uses: softprops/action-gh-release@v1
-        with:
-          prerelease: ${{ inputs.prerelease }}
-          tag_name: ${{ inputs.release_name }}
-          files: "${{ inputs.release_name }}-linux.zip"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish Codeberg release
-        if: ${{ !inputs.upload_artifacts }}
-        continue-on-error: true
-        uses: akkuman/gitea-release-action@v1
-        with:
-          server_url: https://codeberg.org
-          token: ${{ secrets.CODEBERG_TOKEN }}
-          tag_name: ${{ inputs.release_name }}
-          files: "${{ inputs.release_name }}-linux.zip"
-          prerelease: ${{ inputs.prerelease }}
-
-      - name: Upload Linux package as workflow artifact
-        if: ${{ inputs.upload_artifacts }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-package
-          path: "${{ inputs.release_name }}-linux.zip"
-
-  update-docs:
-    needs: [publish-windows, build-linux]
-    if: ${{ always() && !inputs.upload_artifacts && inputs.prerelease == 'false' && (inputs.build_linux || inputs.build_installer || inputs.build_portable) }}
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
+        run: |
+          gh release create "v$VERSION" \
+            --title "Minify $VERSION" \
+            --notes-file artifacts/release-notes/release-notes.md \
+            --target "$GITHUB_SHA" \
+            artifacts/package-*/*

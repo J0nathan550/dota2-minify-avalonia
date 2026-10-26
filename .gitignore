@@ -107,3 +107,7 @@ node_modules
 # Avalonia desktop app
 desktop/**/bin/
 desktop/**/obj/
+
+# Release packaging (scripts/package.py)
+/build/
+/dist/

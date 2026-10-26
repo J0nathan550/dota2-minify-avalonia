@@ -33,6 +33,15 @@
 
 </div>
 
+## Download
+
+Get the latest build from [Releases](https://github.com/J0nathan550/dota2-minify-avalonia/releases/latest):
+
+- **Linux**: `Minify-<version>-linux-x86_64.AppImage`: make it executable (`chmod +x`) and run it. Nothing else to install.
+- **Windows**: `Minify-<version>-win-x64.zip`: extract it anywhere and run `Minify.exe`.
+
+Minify updates itself when a new release is out.
+
 ## Features
 
 - **Cross-platform**: Native Avalonia desktop app (no WebView or GTK needed) and CLI support on Windows and Linux (partial macOS)
