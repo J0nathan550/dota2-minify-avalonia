@@ -27,5 +27,14 @@ public sealed class RealBackendTests
         var languages = await backend.CallAsync<List<string>>("get_available_languages");
         Assert.Contains("en", languages!);
         await Assert.ThrowsAsync<BackendException>(() => backend.CallAsync("_private"));
+
+        // The C# models must match what Python actually sends.
+        var details = await backend.CallAsync<ModDetails>("get_mod_details", "Dark Terrain", "en");
+        Assert.Equal("Dark Terrain", details!.Name);
+        Assert.True(details.HasNotes);
+        var files = Assert.Single(details.Methods!, m => m.Name == "files");
+        Assert.Equal("tree", files.Type);
+        Assert.NotEmpty(files.Tree!.Children!);
+        Assert.NotNull(await backend.CallAsync<List<PluginInfo>>("get_plugins"));
     }
 }

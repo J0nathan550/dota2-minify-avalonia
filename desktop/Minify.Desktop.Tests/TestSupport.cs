@@ -5,6 +5,7 @@ using Avalonia.Headless;
 using Minify.Desktop;
 using Minify.Desktop.Backend;
 using Minify.Desktop.Services;
+using Minify.Desktop.ViewModels;
 
 [assembly: AvaloniaTestApplication(typeof(Minify.Desktop.Tests.TestAppBuilder))]
 
@@ -110,6 +111,14 @@ public sealed class FakeDialogs : IDialogService
     public Task OpenUrlAsync(string url)
     {
         OpenedUrls.Add(url);
+        return Task.CompletedTask;
+    }
+
+    public List<ModDetailsViewModel> DetailsShown { get; } = [];
+
+    public Task ShowModDetailsAsync(ModDetailsViewModel details)
+    {
+        DetailsShown.Add(details);
         return Task.CompletedTask;
     }
 }

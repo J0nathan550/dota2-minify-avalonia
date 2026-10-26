@@ -34,7 +34,8 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:ModItemViewModel">
             <Border Classes="card" Margin="6" Cursor="Hand" Tapped="OnCardTapped"
-                    Opacity="{Binding CanToggle, Converter={x:Static views:ModsPage.EnabledOpacity}}">
+                    Opacity="{Binding CanToggle, Converter={x:Static views:ModsPage.EnabledOpacity}}"
+                    ToolTip.Tip="{Binding DisplayName}">
               <Grid RowDefinitions="110,Auto">
                 <Border Background="{DynamicResource PreviewPlaceholderBrush}">
                   <Panel>
@@ -49,6 +50,11 @@
                     <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"
                                ToolTip.Tip="{Binding DisplayName}" />
                   </CheckBox>
+                  <Button Grid.Column="1" Classes="icon" ToolTip.Tip="Details"
+                          Command="{Binding $parent[UserControl].((vm:ModsPageViewModel)DataContext).OpenDetailsCommand}"
+                          CommandParameter="{Binding}">
+                    <PathIcon Data="{StaticResource IconInfo}" />
+                  </Button>
                 </Grid>
               </Grid>
             </Border>

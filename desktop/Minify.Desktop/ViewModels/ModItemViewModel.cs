@@ -17,7 +17,7 @@ public sealed partial class ModItemViewModel : ObservableObject
         DisplayName = info.DisplayName;
         CanToggle = !info.Always && !info.Untickable;
         Untickable = info.Untickable;
-        Preview = DecodePreview(info.Preview);
+        Preview = DecodePreview(info.Preview, 480);
         _syncing = true;
         IsEnabled = info.Enabled;
         _syncing = false;
@@ -65,7 +65,7 @@ public sealed partial class ModItemViewModel : ObservableObject
         _syncing = false;
     }
 
-    private static Bitmap? DecodePreview(string? dataUri)
+    public static Bitmap? DecodePreview(string? dataUri, int width)
     {
         // Backend sends previews as data:image/...;base64,...
         var comma = dataUri?.IndexOf(',') ?? -1;
@@ -74,7 +74,7 @@ public sealed partial class ModItemViewModel : ObservableObject
         try
         {
             using var stream = new MemoryStream(Convert.FromBase64String(dataUri![(comma + 1)..]));
-            return Bitmap.DecodeToWidth(stream, 480);
+            return Bitmap.DecodeToWidth(stream, width);
         }
         catch (Exception)
         {

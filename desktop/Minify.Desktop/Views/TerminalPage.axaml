@@ -10,7 +10,7 @@
                 Content="{Binding Loc[label_autoscroll]}" />
       <Button Grid.Column="2" Content="{Binding Loc[button_clear]}" Command="{Binding ClearCommand}" />
     </Grid>
-    <Border Grid.Row="1" Classes="card" Margin="12,4,12,12" Background="{DynamicResource TerminalBackgroundBrush}">
+    <Border Grid.Row="1" Classes="code" Margin="12,4,12,12">
       <ListBox x:Name="LogList" ItemsSource="{Binding Logs}" Background="Transparent" Padding="6">
         <ListBox.Styles>
           <Style Selector="ListBoxItem">

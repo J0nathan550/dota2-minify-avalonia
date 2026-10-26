@@ -109,7 +109,7 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
 
     public async Task LoadLocaleAsync(string locale)
     {
-        Loc.Load(await _backend!.CallAsync<Dictionary<string, string>>("get_localization", locale) ?? []);
+        Loc.Load(await _backend!.CallAsync<Dictionary<string, string>>("get_localization", locale) ?? [], locale);
         OnPropertyChanged(nameof(PatchButtonText));
         foreach (var page in Pages)
             page.RefreshTitle();

@@ -140,6 +140,7 @@ This project wouldn't be available without the work of the community. Thanks to 
 | [.NET](https://github.com/dotnet/runtime)                           | Desktop app runtime | [MIT license](https://github.com/dotnet/runtime/blob/main/LICENSE.TXT)                 |
 | [Avalonia](https://github.com/AvaloniaUI/Avalonia)                  | Cross-platform UI   | [MIT license](https://github.com/AvaloniaUI/Avalonia/blob/master/licence.md)           |
 | [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | MVVM helpers        | [MIT license](https://github.com/CommunityToolkit/dotnet/blob/main/License.md)         |
+| [Markdown.Avalonia](https://github.com/whistyun/Markdown.Avalonia)  | Mod notes rendering | [MIT license](https://github.com/whistyun/Markdown.Avalonia/blob/master/LICENSE)       |
 | [Material Design Icons](https://pictogrammers.com/library/mdi/)     | Interface icons     | [Apache-2.0 license](https://github.com/Templarian/MaterialDesign/blob/master/LICENSE) |
 
 ### Development dependencies

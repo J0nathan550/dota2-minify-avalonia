@@ -9,6 +9,15 @@
     <Setter Property="ClipToBounds" Value="True" />
   </Style>
 
+  <!-- Dark code/terminal surface in both themes. -->
+  <Style Selector="Border.code">
+    <Setter Property="Background" Value="{DynamicResource TerminalBackgroundBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+
   <Style Selector="TextBlock.muted, SelectableTextBlock.muted">
     <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
   </Style>

@@ -48,6 +48,26 @@ public sealed partial class ModsPageViewModel(AppSession session) : PageViewMode
     [RelayCommand]
     private void ClearSearch() => SearchText = "";
 
+    [RelayCommand]
+    private async Task OpenDetailsAsync(ModItemViewModel mod)
+    {
+        var details = new ModDetailsViewModel(session, mod.Name);
+        var load = details.LoadAsync();
+        await Task.WhenAll(load, session.Dialogs.ShowModDetailsAsync(details));
+    }
+
+    /// <summary>Card click: toggles the mod, or shows details for mods that can't be toggled.</summary>
+    [RelayCommand]
+    private Task ActivateAsync(ModItemViewModel mod)
+    {
+        if (mod.CanToggle)
+        {
+            mod.ToggleCommand.Execute(null);
+            return Task.CompletedTask;
+        }
+        return OpenDetailsAsync(mod);
+    }
+
     private void ApplyFilter()
     {
         var query = SearchText.Trim();

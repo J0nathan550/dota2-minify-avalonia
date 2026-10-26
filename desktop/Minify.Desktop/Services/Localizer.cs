@@ -30,6 +30,11 @@ public sealed class Localizer : INotifyPropertyChanged
         ["label_remove_everything"] = "Remove everything",
         ["status_download_complete"] = "Download complete ({0})",
         ["status_download_failed"] = "Download failed: {0}",
+        ["button_close"] = "Close",
+        ["loading"] = "Loading...",
+        ["label_empty_file"] = "Empty file",
+        ["label_no_mod_details"] = "No details available for this mod.",
+        ["title_click_to_preview"] = "Click to preview",
     };
 
     private IReadOnlyDictionary<string, string> _strings = new Dictionary<string, string>();
@@ -53,9 +58,13 @@ public sealed class Localizer : INotifyPropertyChanged
         }
     }
 
-    public void Load(IReadOnlyDictionary<string, string> strings)
+    /// <summary>The locale the strings were loaded for, e.g. "en".</summary>
+    public string Locale { get; private set; } = "en";
+
+    public void Load(IReadOnlyDictionary<string, string> strings, string locale = "en")
     {
         _strings = strings;
+        Locale = locale;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
     }
 }

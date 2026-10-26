@@ -39,22 +39,27 @@
       </ListBox>
 
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" IsVisible="{Binding IsReady}">
-        <ItemsControl ItemsSource="{Binding Links}" VerticalAlignment="Center">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel Orientation="Horizontal" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:HeaderLink">
-              <Button Classes="icon" ToolTip.Tip="{Binding Title}"
-                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).OpenLinkCommand}"
-                      CommandParameter="{Binding Url}">
-                <PathIcon Data="{Binding Icon, Converter={x:Static views:MainWindow.IconByKey}}" />
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <Button Classes="icon" ToolTip.Tip="Links">
+          <PathIcon Data="{StaticResource IconWeb}" />
+          <Button.Flyout>
+            <Flyout Placement="BottomEdgeAlignedRight">
+              <ItemsControl ItemsSource="{Binding Links}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:HeaderLink">
+                    <Button Classes="icon" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).OpenLinkCommand}"
+                            CommandParameter="{Binding Url}">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <PathIcon Data="{Binding Icon, Converter={x:Static views:MainWindow.IconByKey}}" />
+                        <TextBlock Text="{Binding Title}" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
         <Button Classes="icon" ToolTip.Tip="Open config directory" Command="{Binding OpenConfigDirectoryCommand}">
           <PathIcon Data="{StaticResource IconFolder}" />
         </Button>

@@ -17,3 +17,17 @@ public sealed record SteamStatus(string Root, string Library, bool DotaFound);
 public sealed record OperationStatus(string Status);
 
 public sealed record PluginInfo(string Id, string Name, bool HasWebUi);
+
+public sealed record ModDetails(
+    string Name,
+    string? DisplayName,
+    string? Notes,
+    string? Preview,
+    bool HasNotes,
+    bool HasPreview,
+    List<ModMethod>? Methods);
+
+/// <summary>How a mod patches the game: a file tree, or a file's text (json, css, xml, python, blacklist...).</summary>
+public sealed record ModMethod(string Name, string Type, string? Content, FileNode? Tree, string? Badge);
+
+public sealed record FileNode(string Name, string Type, string? Path, long? Size, List<FileNode>? Children);

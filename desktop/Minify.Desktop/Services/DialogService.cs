@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using Minify.Desktop.ViewModels;
 using Minify.Desktop.Views;
 
 namespace Minify.Desktop.Services;
@@ -24,6 +25,7 @@ public interface IDialogService
     Task<object?> HandleBackendRequestAsync(string method, JsonElement parameters);
     Task<string?> PickFolderAsync(string? title, string? initialDir = null);
     Task OpenUrlAsync(string url);
+    Task ShowModDetailsAsync(ModDetailsViewModel details);
 }
 
 public static class DialogServiceExtensions
@@ -48,6 +50,9 @@ public sealed partial class DialogService(Func<Window> owner) : IDialogService
 {
     public async Task<DialogResult> ShowAsync(DialogRequest request) =>
         await new DialogWindow(request).ShowDialog<DialogResult?>(owner()) ?? new DialogResult(null);
+
+    public Task ShowModDetailsAsync(ModDetailsViewModel details) =>
+        new ModDetailsWindow { DataContext = details }.ShowDialog(owner());
 
     public async Task OpenUrlAsync(string url)
     {
