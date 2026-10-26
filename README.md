@@ -41,6 +41,13 @@
 - **Plugin friendly**: Develop plugins on `plugins/` that can work alongside the base application
 - **Theming support**: Create a new look for the application with a stylesheet on `themes/`
 
+## Credits
+
+- **Original project:** [Dota2 Minify](https://github.com/Egezenn/dota2-minify) by [Egezenn](https://github.com/Egezenn) and its [contributors](https://github.com/Egezenn/dota2-minify/graphs/contributors).
+- **Avalonia desktop app and cross-platform port:** [J0nathan550](https://github.com/J0nathan550) ([dota2-minify-avalonia](https://github.com/J0nathan550/dota2-minify-avalonia)).
+
+See [NOTICE](NOTICE). Keep these credits when redistributing.
+
 ## Thanks
 
 This project wouldn't be available without the work of the community. Thanks to everyone that has contributed to the project over at GitHub and Discord!
@@ -126,6 +133,14 @@ This project wouldn't be available without the work of the community. Thanks to 
 | [Svelte](https://github.com/sveltejs/svelte) | Reactive UI framework            | [MIT license](https://github.com/sveltejs/svelte/blob/main/LICENSE) |
 | [Vite](https://github.com/vitejs/vite)       | Frontend build tool & dev server | [MIT license](https://github.com/vitejs/vite/blob/main/LICENSE)     |
 
+### Desktop app dependencies
+
+| Name                                                                | Usage               | License                                                                        |
+| ------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------ |
+| [.NET](https://github.com/dotnet/runtime)                           | Desktop app runtime | [MIT license](https://github.com/dotnet/runtime/blob/main/LICENSE.TXT)         |
+| [Avalonia](https://github.com/AvaloniaUI/Avalonia)                  | Cross-platform UI   | [MIT license](https://github.com/AvaloniaUI/Avalonia/blob/master/licence.md)   |
+| [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | MVVM helpers        | [MIT license](https://github.com/CommunityToolkit/dotnet/blob/main/License.md) |
+
 ### Development dependencies
 
 | Name                                           | Usage                | License                                                               |
@@ -165,7 +180,7 @@ This project wouldn't be available without the work of the community. Thanks to 
 
 ## License
 
-Contents of this repository are licensed under [GPL-3.0](LICENSE).
+Contents of this repository are licensed under [GPL-3.0](LICENSE). You're free to use, study, share and modify Minify. Redistributions must stay under GPL-3.0, include the source, and keep the credits in [NOTICE](NOTICE).
 
 > [!NOTE]
 > The project logo and some assets in `Minify/mods/*/files` originate from Dota 2 (Valve Corporation).

@@ -1,0 +1,27 @@
+Dota2 Minify
+Copyright (C) Egezenn and the Dota2 Minify contributors
+Copyright (C) J0nathan550 (Avalonia desktop app and cross-platform port)
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version. See the LICENSE file for the full text.
+
+Original project
+  Dota2 Minify by Egezenn and contributors
+  https://github.com/Egezenn/dota2-minify
+  Contributors include Robby Attila, the Dota Modding Community, MeGaNeKo,
+  otf31, hrdq, Mirhady Dorodjatun, Victor Yenokh, Stanislav Luchanskiy,
+  Siege Paz, prosto saneyk, and the translators on Weblate.
+
+This fork
+  Avalonia desktop app, Python stdio backend bridge and cross-platform
+  packaging by J0nathan550
+  https://github.com/J0nathan550/dota2-minify-avalonia
+
+Redistributions, modified or not, must keep this notice and the credits
+above, as required by GPL-3.0 section 5 ("appropriate legal notices").
+
+The project logo and some assets in Minify/mods/*/files originate from
+Dota 2 (Valve Corporation). Dota 2 is a trademark of Valve Corporation.
+This project is not affiliated with or endorsed by Valve.
