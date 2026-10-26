@@ -17,6 +17,7 @@
   <Window.DataTemplates>
     <DataTemplate DataType="vm:ModsPageViewModel"><views:ModsPage /></DataTemplate>
     <DataTemplate DataType="vm:TerminalPageViewModel"><views:TerminalPage /></DataTemplate>
+    <DataTemplate DataType="vm:SettingsPageViewModel"><views:SettingsPage /></DataTemplate>
     <DataTemplate DataType="vm:WebPluginPageViewModel"><views:WebPluginPage /></DataTemplate>
   </Window.DataTemplates>
 

@@ -18,7 +18,8 @@ public enum BackendState
 
 public sealed record HeaderLink(string Title, string Url, string Icon);
 
-public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Task<IBackend>> startBackend)
+public sealed partial class MainWindowViewModel(
+    IDialogService dialogs, Func<Task<IBackend>> startBackend, IThemeService? themes = null)
     : ObservableObject, IAsyncDisposable
 {
     private IBackend? _backend;
@@ -42,6 +43,7 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
 
     public ModsPageViewModel? ModsPage { get; private set; }
     public TerminalPageViewModel? TerminalPage { get; private set; }
+    public SettingsPageViewModel? SettingsPage { get; private set; }
 
     [ObservableProperty]
     public partial PageViewModel? SelectedPage { get; set; }
@@ -87,6 +89,7 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
 
             var locale = await _backend.CallAsync<string>("get_current_locale") ?? "en";
             await LoadLocaleAsync(locale);
+            await InitThemeAsync();
 
             var steam = await _backend.CallAsync<SteamStatus>("get_steam_status");
             if (steam is { DotaFound: false })
@@ -115,10 +118,52 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
             page.RefreshTitle();
     }
 
+    /// <summary>First run follows the system's light/dark preference, after that the saved theme.</summary>
+    private async Task InitThemeAsync()
+    {
+        if (themes is null)
+            return;
+        if (await _backend!.CallAsync<bool?>("get_state", "system_theme_init") != true)
+        {
+            await _backend.CallAsync("set_setting", "theme", themes.SystemPrefersDark ? "dark" : "light");
+            await _backend.CallAsync("set_state", "system_theme_init", true);
+        }
+        await ApplyThemeAsync(null);
+    }
+
+    private async Task ApplyThemeAsync(string? name)
+    {
+        if (themes is null)
+            return;
+        var css = await _backend!.CallAsync<string>("get_theme_css", name) ?? "";
+        themes.Apply(ThemeCss.Parse(css));
+    }
+
+    /// <summary>Application settings that take effect immediately.</summary>
+    private async Task OnApplicationSettingChangedAsync(string key, object? value)
+    {
+        switch (key)
+        {
+            case "theme":
+                await ApplyThemeAsync(value as string);
+                break;
+            case "locale" when value is string locale:
+                await LoadLocaleAsync(locale);
+                if (SettingsPage is not null)
+                    await SettingsPage.LoadAsync();
+                break;
+            case "output_locale" when ModsPage is not null:
+                // Language-specific mods are switched on/off with the game language.
+                await ModsPage.LoadAsync();
+                break;
+        }
+    }
+
     private async Task BuildPagesAsync(AppSession session)
     {
         ModsPage = new ModsPageViewModel(session);
         TerminalPage = new TerminalPageViewModel(session);
+        SettingsPage = new SettingsPageViewModel(session, OnApplicationSettingChangedAsync);
         await ModsPage.LoadAsync();
         foreach (var entry in await session.Backend.CallAsync<List<LogEntry>>("get_logs") ?? [])
             TerminalPage.Add(entry);
@@ -126,6 +171,7 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
         Pages.Clear();
         Pages.Add(ModsPage);
         Pages.Add(TerminalPage);
+        Pages.Add(SettingsPage);
         foreach (var plugin in await session.Backend.CallAsync<List<PluginInfo>>("get_plugins") ?? [])
         {
             if (plugin.HasWebUi)
@@ -134,6 +180,7 @@ public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Tas
         SelectedPage = ModsPage;
         OnPropertyChanged(nameof(ModsPage));
         OnPropertyChanged(nameof(TerminalPage));
+        OnPropertyChanged(nameof(SettingsPage));
     }
 
     private bool CanRunOperation() => !IsPatching;

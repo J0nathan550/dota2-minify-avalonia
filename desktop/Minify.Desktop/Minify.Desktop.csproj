@@ -10,6 +10,8 @@
     <ApplicationIcon>../../Minify/bin/images/favicon.ico</ApplicationIcon>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Overridden by the release build: dotnet publish -p:Version=x.x.x.x -->
+    <Version>1.0.0.0</Version>
     <Product>Minify</Product>
     <Authors>Egezenn and Dota2 Minify contributors; J0nathan550</Authors>
     <Copyright>GPL-3.0-or-later. Original project by Egezenn and contributors; Avalonia port by J0nathan550.</Copyright>
@@ -26,6 +28,7 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Controls.ColorPicker" Version="12.1.4" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageReference Include="Avalonia.Wayland" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />

@@ -27,6 +27,7 @@ public sealed class MainWindowViewModelTests
         Assert.Equal(BackendState.Ready, vm.State);
         Assert.Equal("PATCH IT", vm.PatchButtonText);
         Assert.Equal(["Dark Terrain", "#base"], vm.ModsPage!.Mods.Select(m => m.Name));
+        Assert.Equal(["mods", "terminal", "settings", "thirdparty"], vm.Pages.Select(p => p.Id));
         Assert.False(vm.ModsPage.Mods.Single(m => m.Name == "#base").CanToggle);
         Assert.Same(vm.ModsPage, vm.SelectedPage);
     }
@@ -265,6 +266,66 @@ public sealed class MainWindowViewModelTests
 
         Assert.Equal(BackendState.Failed, vm.State);
         Assert.Contains("exit code 3", vm.ErrorMessage);
+    }
+
+    private sealed class FakeThemes : IThemeService
+    {
+        public bool SystemPrefersDark { get; set; }
+        public List<CssTheme> Applied { get; } = [];
+        public void Apply(CssTheme theme) => Applied.Add(theme);
+    }
+
+    [AvaloniaFact]
+    public async Task First_run_follows_system_theme_then_applies_it()
+    {
+        var themes = new FakeThemes { SystemPrefersDark = true };
+        var backend = FakeBackend.WithDefaults()
+            .On("get_state", (object?)null)
+            .On("get_theme_css", ":root { color-scheme: dark; --bg-primary: #000000; }");
+        var vm = new MainWindowViewModel(_dialogs, () => Task.FromResult<IBackend>(backend), themes);
+
+        await vm.StartAsync();
+
+        Assert.Equal(["theme", "dark"], backend.CallsTo("set_setting").Single());
+        Assert.Equal(["system_theme_init", true], backend.CallsTo("set_state").Single());
+        Assert.Equal(Avalonia.Styling.ThemeVariant.Dark, themes.Applied.Single().Variant);
+    }
+
+    [AvaloniaFact]
+    public async Task Later_runs_keep_the_saved_theme()
+    {
+        var themes = new FakeThemes();
+        var backend = FakeBackend.WithDefaults().On("get_state", true).On("get_theme_css", "");
+        var vm = new MainWindowViewModel(_dialogs, () => Task.FromResult<IBackend>(backend), themes);
+
+        await vm.StartAsync();
+
+        Assert.Empty(backend.CallsTo("set_setting"));
+        Assert.Single(themes.Applied);
+    }
+
+    [AvaloniaFact]
+    public async Task Changing_language_in_settings_reloads_strings()
+    {
+        var backend = FakeBackend.WithDefaults()
+            .On("set_setting", true)
+            .On("get_localization", args => args[0] as string == "ru"
+                ? new Dictionary<string, string> { ["tab_mods"] = "Моды" }
+                : new Dictionary<string, string>())
+            .On("get_settings", new
+            {
+                schema = new[] { new { key = "locale", value_key = "locale", text = "Lang", type = "combo", items = new[] { "en", "ru" } } },
+                values = new Dictionary<string, object> { ["locale"] = "en" },
+            });
+        var (vm, _) = await StartedAsync(backend);
+        await vm.SettingsPage!.LoadAsync();
+
+        var locale = vm.SettingsPage.Sections[0].Items.OfType<ComboSettingViewModel>().Single();
+        locale.Selected = locale.Options.Single(o => o.Value == "ru");
+        await Task.Yield();
+
+        Assert.Equal("Моды", vm.ModsPage!.Title);
+        Assert.Equal("ru", vm.Loc.Locale);
     }
 
     [AvaloniaFact]

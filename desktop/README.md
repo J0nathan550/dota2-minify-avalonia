@@ -37,6 +37,6 @@ To try only the backend: `printf '{"id":1,"method":"get_mods"}\n' | uv run pytho
 
 Tests: `dotnet test desktop/Minify.Desktop.slnx` (the real-backend test needs `uv sync`).
 
-Done: mods grid with previews and search, toggling mods, patch/uninstall, live terminal output, download progress, locale strings, the Steam-not-found flow, and native file/folder/alert dialogs for mod scripts.
+Done: mods grid with previews, search and refresh; mod details (notes, preview, file trees, code); toggling mods; patch/uninstall (with "remove everything"); live terminal output; download notifications; settings for the app, mods and plugins (every control type, reset, live language and theme switching); CSS themes from `themes/` mapped onto the native UI; About and credits; the Steam-not-found flow; native file/folder/alert dialogs for mod scripts.
 
-Not ported yet from the Svelte UI: settings, mod details (notes, file tree, per-mod settings), plugin tabs (d2pfx, community), announcements and updater, workshop tools modals, legacy mods import, theme switching.
+Not ported yet from the Svelte UI: plugin tabs (d2pfx, community), announcements and updater, workshop tools prompts, legacy mods import.

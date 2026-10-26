@@ -19,7 +19,8 @@ public sealed class App : Application
             var window = new MainWindow();
             var viewModel = new MainWindowViewModel(
                 new DialogService(() => window),
-                async () => await BackendClient.StartAsync(BackendCommand.Resolve()));
+                async () => await BackendClient.StartAsync(BackendCommand.Resolve()),
+                new ThemeService());
             window.DataContext = viewModel;
             desktop.MainWindow = window;
             var backendStopped = false;

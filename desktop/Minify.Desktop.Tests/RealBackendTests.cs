@@ -36,5 +36,17 @@ public sealed class RealBackendTests
         Assert.Equal("tree", files.Type);
         Assert.NotEmpty(files.Tree!.Children!);
         Assert.NotNull(await backend.CallAsync<List<PluginInfo>>("get_plugins"));
+
+        // Every setting Python offers must have a native control.
+        var settings = await backend.CallAsync("get_settings");
+        var loc = new Minify.Desktop.Services.Localizer();
+        foreach (var item in settings.GetProperty("schema").EnumerateArray())
+        {
+            var spec = Minify.Desktop.ViewModels.SettingSpec.Parse(item, loc);
+            Assert.NotNull(Minify.Desktop.ViewModels.SettingItemViewModel.Create(
+                spec, default, new(backend, loc, new FakeDialogs()), (_, _) => Task.CompletedTask));
+        }
+        Assert.Contains("--bg-primary", Minify.Desktop.Services.ThemeCss.Parse(
+            await backend.CallAsync<string>("get_theme_css", "dark") ?? "").Colors.Keys);
     }
 }

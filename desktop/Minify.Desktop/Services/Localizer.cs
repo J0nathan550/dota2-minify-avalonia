@@ -35,6 +35,13 @@ public sealed class Localizer : INotifyPropertyChanged
         ["label_empty_file"] = "Empty file",
         ["label_no_mod_details"] = "No details available for this mod.",
         ["title_click_to_preview"] = "Click to preview",
+        ["section_advanced_settings"] = "Advanced Settings",
+        ["button_reset"] = "Reset",
+        ["button_add"] = "Add",
+        ["button_remove"] = "Remove",
+        ["placeholder_add_item"] = "Add item...",
+        ["button_run"] = "Run",
+        ["section_application_settings"] = "Application Settings",
     };
 
     private IReadOnlyDictionary<string, string> _strings = new Dictionary<string, string>();

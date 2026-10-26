@@ -1,0 +1,135 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Minify.Desktop.ViewModels"
+             x:Class="Minify.Desktop.Views.SettingsPage"
+             x:DataType="vm:SettingsPageViewModel">
+
+  <UserControl.Styles>
+    <Style Selector="Grid.setting-row">
+      <Setter Property="Margin" Value="0,6" />
+      <Setter Property="MinHeight" Value="32" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- One template per setting type; each puts its label on the left and the control on the right. -->
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="vm:CheckboxSettingViewModel">
+      <Grid Classes="setting-row" ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" />
+        <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsChecked}" OnContent="" OffContent="" />
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="vm:TextSettingViewModel">
+      <Grid Classes="setting-row" ColumnDefinitions="*,280">
+        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
+        <TextBox Grid.Column="1" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" />
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="vm:ComboSettingViewModel">
+      <Grid Classes="setting-row" ColumnDefinitions="*,280">
+        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
+        <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" ItemsSource="{Binding Options}"
+                  SelectedItem="{Binding Selected}" />
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="vm:NumberSettingViewModel">
+      <Grid Classes="setting-row" ColumnDefinitions="*,280">
+        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
+        <NumericUpDown Grid.Column="1" IsVisible="{Binding !IsSlider}" Value="{Binding Value}"
+                       Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" Increment="{Binding Step}"
+                       FormatString="{Binding FormatString}" />
+        <Grid Grid.Column="1" ColumnDefinitions="*,48" IsVisible="{Binding IsSlider}">
+          <Slider Value="{Binding SliderValue}" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}"
+                  SmallChange="{Binding Step}" TickFrequency="{Binding Step}" IsSnapToTickEnabled="True" />
+          <TextBlock Grid.Column="1" Text="{Binding DisplayValue}" TextAlignment="Right" VerticalAlignment="Center" />
+        </Grid>
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="vm:ColorSettingViewModel">
+      <Grid Classes="setting-row" ColumnDefinitions="*,Auto,180">
+        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
+        <ColorPicker Grid.Column="1" Color="{Binding Color}" IsAlphaEnabled="False" Margin="0,0,8,0" />
+        <TextBox Grid.Column="2" Text="{Binding Text, UpdateSourceTrigger=LostFocus}" />
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="vm:ListSettingViewModel">
+      <StackPanel Margin="0,6" Spacing="6">
+        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+        <ItemsControl ItemsSource="{Binding Entries}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ListEntryViewModel">
+              <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                <TextBox Text="{Binding Text, UpdateSourceTrigger=LostFocus}" />
+                <Button Grid.Column="1" Margin="6,0,0,0" Command="{Binding RemoveCommand}"
+                        Content="{Binding $parent[ItemsControl].((vm:ListSettingViewModel)DataContext).Loc[button_remove]}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBox Text="{Binding NewEntry}" PlaceholderText="{Binding Loc[placeholder_add_item]}">
+            <TextBox.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding AddCommand}" />
+            </TextBox.KeyBindings>
+          </TextBox>
+          <Button Grid.Column="1" Margin="6,0,0,0" Content="{Binding Loc[button_add]}" Command="{Binding AddCommand}" />
+        </Grid>
+      </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="vm:ButtonSettingViewModel">
+      <Grid Classes="setting-row" ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding Label}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
+        <Button Grid.Column="1" Content="{Binding Label}" Command="{Binding RunCommand}" />
+      </Grid>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <ScrollViewer>
+    <StackPanel Margin="12,8,12,16" Spacing="12" MaxWidth="860">
+      <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoading}" />
+      <ItemsControl ItemsSource="{Binding Sections}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:SettingsSectionViewModel">
+            <Border Classes="card" Padding="16,12" Margin="0,0,0,12">
+              <StackPanel>
+                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,4">
+                  <TextBlock Classes="h2" Text="{Binding Title}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" IsVisible="{Binding CanReset}" Command="{Binding ResetCommand}"
+                          Content="{Binding $parent[UserControl].((vm:SettingsPageViewModel)DataContext).Loc[button_reset]}" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Items}" />
+                <Expander IsVisible="{Binding HasAdvanced}" HorizontalAlignment="Stretch" Margin="0,8,0,0"
+                          Header="{Binding $parent[UserControl].((vm:SettingsPageViewModel)DataContext).Loc[section_advanced_settings]}">
+                  <ItemsControl ItemsSource="{Binding AdvancedItems}" />
+                </Expander>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Border Classes="card" Padding="16,12">
+        <StackPanel Spacing="6">
+          <TextBlock Classes="h2" Text="About" />
+          <SelectableTextBlock Text="{Binding AboutVersion}" />
+          <TextBlock TextWrapping="Wrap"
+                     Text="Original Dota2 Minify by Egezenn and contributors. Avalonia desktop app and cross-platform port by J0nathan550." />
+          <TextBlock Classes="muted" TextWrapping="Wrap"
+                     Text="Free software under the GNU GPL v3 or later. Dota 2 is a trademark of Valve Corporation; this project is not affiliated with Valve." />
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+            <Button Content="Minify (original)" Command="{Binding OpenUrlCommand}"
+                    CommandParameter="https://github.com/Egezenn/dota2-minify" />
+            <Button Content="Avalonia port" Command="{Binding OpenUrlCommand}"
+                    CommandParameter="https://github.com/J0nathan550/dota2-minify-avalonia" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
