@@ -127,6 +127,30 @@ public sealed class AppHomeTests : IDisposable
         Assert.NotEqual(0, CliForwarder.Run(command.WithArguments(["patch", "--no-such-option"])));
     }
 
+    [Fact]
+    public void Cli_forwarding_can_relay_backend_output()
+    {
+        // How the Windows app forwards: it has no console, so the backend's output is relayed explicitly.
+        BackendCommand command;
+        try
+        {
+            command = BackendCommand.Resolve(new Dictionary<string, string?>(), AppContext.BaseDirectory);
+        }
+        catch (FileNotFoundException ex)
+        {
+            Assert.Skip($"No Python backend available: {ex.Message}");
+            return;
+        }
+        var output = new StringWriter();
+        var error = new StringWriter();
+
+        Assert.Equal(0, CliForwarder.Run(command.WithArguments(["--version"]), output, error));
+        Assert.NotEqual(0, CliForwarder.Run(command.WithArguments(["patch", "--no-such-option"]), output, error));
+
+        Assert.Matches(@"^\S+\s*$", output.ToString().Split('\n')[0]);
+        Assert.Contains("--no-such-option", error.ToString());
+    }
+
     private static void Write(string path, string content)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
