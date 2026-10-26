@@ -29,6 +29,8 @@ public sealed partial class MainWindowViewModel(
     public const string WorkshopToolsReleasesUrl = "https://github.com/Dota-Modding-Community/workshoptools/releases";
 
     private IBackend? _backend;
+
+    private IBackend Backend => _backend ?? throw new InvalidOperationException("The backend isn't running.");
     private bool _shuttingDown;
 
     public Localizer Loc { get; } = new();
@@ -97,11 +99,11 @@ public sealed partial class MainWindowViewModel(
             _backend.Exited += OnBackendExited;
             Version = _backend.BackendVersion;
 
-            var locale = await _backend.CallAsync<string>("get_current_locale") ?? "en";
+            var locale = await Backend.CallAsync<string>("get_current_locale") ?? "en";
             await LoadLocaleAsync(locale);
             await InitThemeAsync();
 
-            var steam = await _backend.CallAsync<SteamStatus>("get_steam_status");
+            var steam = await Backend.CallAsync<SteamStatus>("get_steam_status");
             if (steam is { DotaFound: false })
             {
                 State = BackendState.SteamMissing;
@@ -109,8 +111,8 @@ public sealed partial class MainWindowViewModel(
             }
 
             await BuildPagesAsync(new AppSession(_backend, Loc, dialogs));
-            IsPatching = await _backend.CallAsync<bool>("is_patching");
-            IsWorkshopMissing = !await _backend.CallAsync<bool>("is_workshop_installed");
+            IsPatching = await Backend.CallAsync<bool>("is_patching");
+            IsWorkshopMissing = !await Backend.CallAsync<bool>("is_workshop_installed");
             State = BackendState.Ready;
         }
         catch (Exception ex)
@@ -141,7 +143,7 @@ public sealed partial class MainWindowViewModel(
 
     private async Task OfferLegacyModsImportAsync()
     {
-        var entries = await _backend!.CallAsync<List<string>>("get_legacy_mods") ?? [];
+        var entries = await Backend.CallAsync<List<string>>("get_legacy_mods") ?? [];
         if (entries.Count == 0)
             return;
         var result = await dialogs.ShowAsync(new DialogRequest(
@@ -156,7 +158,7 @@ public sealed partial class MainWindowViewModel(
         if (result.ButtonId is null)
             return;
         var import = result.ButtonId == "import";
-        await _backend.CallAsync("import_legacy_mods", import);
+        await Backend.CallAsync("import_legacy_mods", import);
         if (import && ModsPage is not null)
             await ModsPage.LoadAsync();
     }
@@ -177,7 +179,7 @@ public sealed partial class MainWindowViewModel(
             return false;
         }
 
-        var seen = await _backend!.CallAsync<List<string>>("get_state", Announcements.SeenStateKey) ?? [];
+        var seen = await Backend.CallAsync<List<string>>("get_state", Announcements.SeenStateKey) ?? [];
         var pending = Announcements.Pending(all, seen, DateTimeOffset.UtcNow, AppInfo.Version.ToString());
         foreach (var announcement in pending)
         {
@@ -187,7 +189,7 @@ public sealed partial class MainWindowViewModel(
                 [new DialogButton("ok", Loc["button_ok"], IsDefault: true, IsAccent: true)],
                 Links: announcement.AllUrls));
             seen.Add(announcement.Id);
-            await _backend.CallAsync("set_state", Announcements.SeenStateKey, seen);
+            await Backend.CallAsync("set_state", Announcements.SeenStateKey, seen);
         }
         return pending.Count > 0;
     }
@@ -195,7 +197,7 @@ public sealed partial class MainWindowViewModel(
     /// <summary>Offers to download Workshop Tools; on startup it can also be ignored for good.</summary>
     private async Task OfferWorkshopToolsDownloadAsync(bool onStartup)
     {
-        if (onStartup && await _backend!.CallAsync<bool?>("get_state", "ignore_workshop_download") == true)
+        if (onStartup && await Backend.CallAsync<bool?>("get_state", "ignore_workshop_download") == true)
             return;
 
         string? error = null;
@@ -216,13 +218,13 @@ public sealed partial class MainWindowViewModel(
 
             if (result.ButtonId == "ignore")
             {
-                await _backend!.CallAsync("set_state", "ignore_workshop_download", true);
+                await Backend.CallAsync("set_state", "ignore_workshop_download", true);
                 return;
             }
             if (result.ButtonId != "download")
                 return;
 
-            if (await _backend!.CallAsync<bool>("download_workshop_tools"))
+            if (await Backend.CallAsync<bool>("download_workshop_tools"))
             {
                 IsWorkshopMissing = false;
                 if (ModsPage is not null)
@@ -238,7 +240,7 @@ public sealed partial class MainWindowViewModel(
 
     public async Task LoadLocaleAsync(string locale)
     {
-        Loc.Load(await _backend!.CallAsync<Dictionary<string, string>>("get_localization", locale) ?? [], locale);
+        Loc.Load(await Backend.CallAsync<Dictionary<string, string>>("get_localization", locale) ?? [], locale);
         OnPropertyChanged(nameof(PatchButtonText));
         foreach (var page in Pages)
             page.RefreshTitle();
@@ -249,10 +251,10 @@ public sealed partial class MainWindowViewModel(
     {
         if (themes is null)
             return;
-        if (await _backend!.CallAsync<bool?>("get_state", "system_theme_init") != true)
+        if (await Backend.CallAsync<bool?>("get_state", "system_theme_init") != true)
         {
-            await _backend.CallAsync("set_setting", "theme", themes.SystemPrefersDark ? "dark" : "light");
-            await _backend.CallAsync("set_state", "system_theme_init", true);
+            await Backend.CallAsync("set_setting", "theme", themes.SystemPrefersDark ? "dark" : "light");
+            await Backend.CallAsync("set_state", "system_theme_init", true);
         }
         await ApplyThemeAsync(null);
     }
@@ -261,7 +263,7 @@ public sealed partial class MainWindowViewModel(
     {
         if (themes is null)
             return;
-        var css = await _backend!.CallAsync<string>("get_theme_css", name) ?? "";
+        var css = await Backend.CallAsync<string>("get_theme_css", name) ?? "";
         themes.Apply(ThemeCss.Parse(css));
     }
 
@@ -357,7 +359,7 @@ public sealed partial class MainWindowViewModel(
     private async Task PatchAsync()
     {
         // Workshop Tools found in the game files (Linux): offer to extract them before patching.
-        if (await _backend!.CallAsync<bool>("check_workshop_tools_needed"))
+        if (await Backend.CallAsync<bool>("check_workshop_tools_needed"))
         {
             var result = await dialogs.ShowAsync(new DialogRequest(
                 Loc["title_extract_workshop_tools"],
@@ -371,10 +373,10 @@ public sealed partial class MainWindowViewModel(
                 return;
             SelectedPage = TerminalPage;
             if (result.ButtonId == "extract")
-                await _backend.CallAsync("extract_workshop_tools");
+                await Backend.CallAsync("extract_workshop_tools");
         }
         SelectedPage = TerminalPage;
-        await _backend.CallAsync<OperationStatus>("start_patch");
+        await Backend.CallAsync<OperationStatus>("start_patch");
     }
 
     [RelayCommand(CanExecute = nameof(CanRunOperation))]
@@ -392,11 +394,11 @@ public sealed partial class MainWindowViewModel(
         if (result.ButtonId != "yes")
             return;
         SelectedPage = TerminalPage;
-        await _backend!.CallAsync<OperationStatus>("start_uninstall", result.OptionChecked);
+        await Backend.CallAsync<OperationStatus>("start_uninstall", result.OptionChecked);
     }
 
     [RelayCommand]
-    private Task OpenConfigDirectoryAsync() => _backend!.CallAsync("open_config_directory");
+    private Task OpenConfigDirectoryAsync() => Backend.CallAsync("open_config_directory");
 
     [RelayCommand]
     private Task OpenLinkAsync(string url) => dialogs.OpenUrlAsync(url);
@@ -419,7 +421,7 @@ public sealed partial class MainWindowViewModel(
         var path = await dialogs.PickFolderAsync("Select your Steam installation folder");
         if (path is null)
             return;
-        if (!await _backend!.CallAsync<bool>("set_steam_root", path))
+        if (!await Backend.CallAsync<bool>("set_steam_root", path))
         {
             await dialogs.AlertAsync("Minify", $"Dota 2 was not found in the Steam libraries of {path}.", "error");
             return;

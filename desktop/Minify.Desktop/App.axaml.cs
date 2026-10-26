@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Minify.Desktop.Backend;
 using Minify.Desktop.Services;
+using Minify.Desktop.Services.Updates;
 using Minify.Desktop.ViewModels;
 using Minify.Desktop.Views;
 
@@ -16,6 +17,10 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Leftovers of a finished Windows update.
+            if (Installation.Detect().Kind == InstallKind.WindowsFolder)
+                _ = Task.Run(() => Updater.CleanUp(AppContext.BaseDirectory));
+
             var window = new MainWindow();
             var viewModel = new MainWindowViewModel(
                 new DialogService(() => window),

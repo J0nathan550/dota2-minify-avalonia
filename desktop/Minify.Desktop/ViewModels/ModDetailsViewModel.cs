@@ -85,6 +85,8 @@ public sealed class ModMethodViewModel
 
 public sealed partial class ModDetailsViewModel(AppSession session, string modName) : ObservableObject, IDetailsViewModel
 {
+    private readonly string _modName = modName;
+
     public Localizer Loc => session.Loc;
 
     [ObservableProperty]
@@ -121,7 +123,7 @@ public sealed partial class ModDetailsViewModel(AppSession session, string modNa
         IsLoading = true;
         try
         {
-            var details = await session.Backend.CallAsync<ModDetails>("get_mod_details", modName, session.Loc.Locale);
+            var details = await session.Backend.CallAsync<ModDetails>("get_mod_details", _modName, session.Loc.Locale);
             if (details is null)
                 return;
             Title = string.IsNullOrEmpty(details.DisplayName) ? details.Name : details.DisplayName;

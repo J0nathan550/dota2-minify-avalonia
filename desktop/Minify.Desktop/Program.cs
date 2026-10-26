@@ -1,5 +1,6 @@
 using Avalonia;
 using Minify.Desktop.Backend;
+using Minify.Desktop.Services.Updates;
 
 namespace Minify.Desktop;
 
@@ -10,6 +11,8 @@ internal static class Program
     {
         if (CliForwarder.IsCliCommand(args))
             return CliForwarder.Run(args);
+        if (UpdateCli.IsUpdateCommand(args))
+            return UpdateCli.Run(args, Console.Out);
 #if DEBUG
         System.Diagnostics.Trace.Listeners.Add(new System.Diagnostics.ConsoleTraceListener(useErrorStream: true));
 #endif
