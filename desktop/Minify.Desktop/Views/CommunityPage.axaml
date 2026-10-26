@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Minify.Desktop.ViewModels"
+             x:Class="Minify.Desktop.Views.CommunityPage"
+             x:DataType="vm:CommunityPageViewModel">
+  <Grid RowDefinitions="Auto,Auto,Auto,*">
+    <Grid ColumnDefinitions="*,Auto,Auto" Margin="12,8,12,4">
+      <TextBlock Classes="h2" Text="{Binding Title}" VerticalAlignment="Center" />
+      <TextBox Grid.Column="1" Width="240" Margin="0,0,8,0" Text="{Binding SearchText}"
+               PlaceholderText="{Binding Loc[community_search_placeholder]}" />
+      <Button Grid.Column="2" Command="{Binding RefreshCommand}">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <PathIcon Data="{StaticResource IconRefresh}" Width="14" Height="14" />
+          <TextBlock Text="{Binding RefreshText}" />
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <ListBox Grid.Row="1" Classes="tabs" Margin="8,0" ItemsSource="{Binding Types}"
+             SelectedValue="{Binding SelectedType}" SelectedValueBinding="{Binding Value}">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:ComboOption">
+          <TextBlock Text="{Binding Label}" FontSize="13" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <SelectableTextBlock Grid.Row="2" Margin="14,4" Foreground="{DynamicResource LogErrorBrush}" TextWrapping="Wrap"
+                         Text="{Binding ErrorMessage}"
+                         IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+    <Panel Grid.Row="3">
+      <TextBlock Classes="muted" Margin="14" Text="{Binding Loc[community_no_packages]}" IsVisible="{Binding IsEmpty}" />
+      <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding Entries}" Margin="6">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel ItemWidth="236" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:CommunityEntryViewModel">
+              <Border Classes="card" Classes.active="{Binding IsInstalled}" Margin="6">
+                <Grid RowDefinitions="120,Auto,Auto">
+                  <Button Padding="0" Background="{DynamicResource PreviewPlaceholderBrush}" CornerRadius="0"
+                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Cursor="Hand"
+                          Command="{Binding DetailsCommand}">
+                    <Panel>
+                      <TextBlock Text="{Binding Initial}" FontSize="44" FontWeight="Bold" Opacity="0.35"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <Image Source="{Binding PreviewImage}" Stretch="UniformToFill" />
+                    </Panel>
+                  </Button>
+                  <StackPanel Grid.Row="1" Margin="10,8,10,4" Spacing="2">
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Name}" />
+                    <TextBlock Classes="muted" FontSize="12" Text="{Binding TypeLabel}" />
+                  </StackPanel>
+                  <WrapPanel Grid.Row="2" Margin="10,4,10,10">
+                    <Button Margin="0,0,6,4" Content="{Binding Loc[community_button_details]}" Command="{Binding DetailsCommand}" />
+                    <Button Margin="0,0,6,4" Classes="accent" Content="{Binding InstallText}" Command="{Binding InstallCommand}"
+                            IsVisible="{Binding CanInstall}" />
+                    <Button Margin="0,0,6,4" Classes="accent" Content="{Binding UpdateText}" Command="{Binding UpdateCommand}"
+                            IsVisible="{Binding CanUpdate}" />
+                    <Button Margin="0,0,6,4" Content="{Binding RemoveText}" Command="{Binding RemoveCommand}"
+                            IsVisible="{Binding IsInstalled}" />
+                  </WrapPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Panel>
+  </Grid>
+</UserControl>

@@ -117,9 +117,9 @@ public sealed class FakeDialogs : IDialogService
         return Task.CompletedTask;
     }
 
-    public List<ModDetailsViewModel> DetailsShown { get; } = [];
+    public List<IDetailsViewModel> DetailsShown { get; } = [];
 
-    public Task ShowModDetailsAsync(ModDetailsViewModel details)
+    public Task ShowDetailsAsync(IDetailsViewModel details)
     {
         DetailsShown.Add(details);
         return Task.CompletedTask;

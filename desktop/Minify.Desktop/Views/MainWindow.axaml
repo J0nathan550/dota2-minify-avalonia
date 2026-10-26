@@ -20,6 +20,7 @@
     <DataTemplate DataType="vm:SettingsPageViewModel"><views:SettingsPage /></DataTemplate>
     <DataTemplate DataType="vm:WebPluginPageViewModel"><views:WebPluginPage /></DataTemplate>
     <DataTemplate DataType="vm:D2pfxPageViewModel"><views:D2pfxPage /></DataTemplate>
+    <DataTemplate DataType="vm:CommunityPageViewModel"><views:CommunityPage /></DataTemplate>
   </Window.DataTemplates>
 
   <Grid RowDefinitions="Auto,*,Auto">

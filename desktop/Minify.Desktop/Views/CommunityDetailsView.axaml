@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Minify.Desktop.ViewModels"
+             xmlns:md="using:Markdown.Avalonia"
+             x:Class="Minify.Desktop.Views.CommunityDetailsView"
+             x:DataType="vm:CommunityDetailsViewModel">
+  <Grid>
+    <ScrollViewer Padding="20,0,20,8">
+      <StackPanel Spacing="14">
+        <WrapPanel>
+          <Border Classes="card" Padding="8,2" CornerRadius="10" Margin="0,0,8,6">
+            <TextBlock Text="{Binding TypeLabel}" FontSize="12" />
+          </Border>
+          <TextBlock Text="{Binding TagLabel}" VerticalAlignment="Center" Margin="0,0,8,6" />
+          <TextBlock Text="{Binding UpdateLabel}" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center"
+                     Margin="0,0,8,6" IsVisible="{Binding UpdateLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <HyperlinkButton Content="{Binding Loc[community_button_repository]}" NavigateUri="{Binding Entry.Repo}"
+                           IsVisible="{Binding HasRepo}" Padding="0" Margin="0,0,0,6" />
+        </WrapPanel>
+        <TextBlock Text="{Binding Incompatible}" Foreground="{DynamicResource LogWarningBrush}" TextWrapping="Wrap"
+                   IsVisible="{Binding Incompatible, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <TextBlock Text="{Binding Entry.Error}" Foreground="{DynamicResource LogErrorBrush}" TextWrapping="Wrap"
+                   IsVisible="{Binding Entry.Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <TextBlock Classes="muted" Text="{Binding Loc[community_loading_details]}" IsVisible="{Binding IsLoading}" />
+        <TextBlock Classes="muted" Text="{Binding Loc[community_no_notes]}" IsVisible="{Binding IsEmpty}" />
+
+        <Grid ColumnDefinitions="Auto,*">
+          <Button Padding="0" Margin="0,0,16,0" VerticalAlignment="Top" Background="Transparent" Cursor="Hand"
+                  IsVisible="{Binding HasPreview}" Command="{Binding ToggleLightboxCommand}"
+                  ToolTip.Tip="{Binding Loc[community_title_click_to_preview]}">
+            <Border Classes="card" Width="320">
+              <Image Source="{Binding Preview}" Stretch="Uniform" />
+            </Border>
+          </Button>
+          <md:MarkdownScrollViewer Grid.Column="1" Markdown="{Binding Notes}" IsVisible="{Binding HasNotes}" />
+        </Grid>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Background="#CC000000" IsVisible="{Binding IsLightboxOpen}" Tapped="OnLightboxTapped" Cursor="Hand">
+      <Image Source="{Binding Preview}" Stretch="Uniform" Margin="24" />
+    </Border>
+  </Grid>
+</UserControl>

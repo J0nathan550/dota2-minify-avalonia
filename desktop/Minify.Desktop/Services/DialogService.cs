@@ -27,7 +27,8 @@ public interface IDialogService
     Task<object?> HandleBackendRequestAsync(string method, JsonElement parameters);
     Task<string?> PickFolderAsync(string? title, string? initialDir = null);
     Task OpenUrlAsync(string url);
-    Task ShowModDetailsAsync(ModDetailsViewModel details);
+    /// <summary>Shows a mod or package details view model in a details window.</summary>
+    Task ShowDetailsAsync(IDetailsViewModel details);
 }
 
 public static class DialogServiceExtensions
@@ -53,8 +54,8 @@ public sealed partial class DialogService(Func<Window> owner) : IDialogService
     public async Task<DialogResult> ShowAsync(DialogRequest request) =>
         await new DialogWindow(request).ShowDialog<DialogResult?>(owner()) ?? new DialogResult(null);
 
-    public Task ShowModDetailsAsync(ModDetailsViewModel details) =>
-        new ModDetailsWindow { DataContext = details }.ShowDialog(owner());
+    public Task ShowDetailsAsync(IDetailsViewModel details) =>
+        new DetailsWindow { DataContext = details }.ShowDialog(owner());
 
     public async Task OpenUrlAsync(string url)
     {

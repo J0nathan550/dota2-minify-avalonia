@@ -1,18 +1,11 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:Minify.Desktop.ViewModels"
-        xmlns:md="using:Markdown.Avalonia"
-        x:Class="Minify.Desktop.Views.ModDetailsWindow"
-        x:DataType="vm:ModDetailsViewModel"
-        Title="{Binding Title}"
-        Icon="/Assets/favicon.ico"
-        Width="860" Height="640" MinWidth="520" MinHeight="400"
-        WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource WindowBackgroundBrush}">
-  <Grid RowDefinitions="Auto,*,Auto">
-    <TextBlock Classes="h2" Margin="20,16,20,8" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-
-    <ScrollViewer Grid.Row="1" Padding="20,0,20,8">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Minify.Desktop.ViewModels"
+             xmlns:md="using:Markdown.Avalonia"
+             x:Class="Minify.Desktop.Views.ModDetailsView"
+             x:DataType="vm:ModDetailsViewModel">
+  <Grid>
+    <ScrollViewer Padding="20,0,20,8">
       <StackPanel Spacing="16">
         <TextBlock Text="{Binding Loc[loading]}" IsVisible="{Binding IsLoading}" Classes="muted" />
         <SelectableTextBlock Text="{Binding Error}" Foreground="{DynamicResource LogErrorBrush}"
@@ -74,7 +67,7 @@
                     </ScrollViewer>
                   </Border>
 
-                  <TextBlock Classes="muted" Text="{Binding $parent[Window].((vm:ModDetailsViewModel)DataContext).Loc[label_empty_file]}"
+                  <TextBlock Classes="muted" Text="{Binding $parent[UserControl].((vm:ModDetailsViewModel)DataContext).Loc[label_empty_file]}"
                              IsVisible="{Binding IsEmpty}" />
                 </Panel>
               </Expander>
@@ -84,13 +77,10 @@
       </StackPanel>
     </ScrollViewer>
 
-    <Button Grid.Row="2" Margin="20,8,20,16" HorizontalAlignment="Right" IsCancel="True"
-            Content="{Binding Loc[button_close]}" Click="OnClose" />
-
     <!-- Full-size preview; click or Escape closes it. -->
-    <Border Grid.RowSpan="3" Background="#CC000000" IsVisible="{Binding IsLightboxOpen}"
+    <Border Background="#CC000000" IsVisible="{Binding IsLightboxOpen}"
             Tapped="OnLightboxTapped" Cursor="Hand">
       <Image Source="{Binding Preview}" Stretch="Uniform" Margin="24" />
     </Border>
   </Grid>
-</Window>
+</UserControl>

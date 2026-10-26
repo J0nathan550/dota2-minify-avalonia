@@ -57,6 +57,7 @@ public sealed class Localizer : INotifyPropertyChanged
         ["modal_workshop_tools_detected"] = "Dota 2 Workshop Tools is detected in your game files.",
         ["modal_workshop_tools_prompt"] = "Would you like to extract them for later use?",
         ["title_import_legacy_mods"] = "Import old mods",
+        ["community_title"] = "Community",
         ["modal_import_legacy_mods"] = "Old mods from a previous installation were found. Import them now? Entries that are not migrated will be deleted.",
     };
 

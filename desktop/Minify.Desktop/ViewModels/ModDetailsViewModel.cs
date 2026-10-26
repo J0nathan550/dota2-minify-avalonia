@@ -83,7 +83,7 @@ public sealed class ModMethodViewModel
     }
 }
 
-public sealed partial class ModDetailsViewModel(AppSession session, string modName) : ObservableObject
+public sealed partial class ModDetailsViewModel(AppSession session, string modName) : ObservableObject, IDetailsViewModel
 {
     public Localizer Loc => session.Loc;
 

@@ -1,0 +1,22 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Minify.Desktop.ViewModels"
+        xmlns:views="using:Minify.Desktop.Views"
+        x:Class="Minify.Desktop.Views.DetailsWindow"
+        x:DataType="vm:IDetailsViewModel"
+        Title="{Binding Title}"
+        Icon="/Assets/favicon.ico"
+        Width="860" Height="640" MinWidth="520" MinHeight="400"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackgroundBrush}">
+  <Window.DataTemplates>
+    <DataTemplate DataType="vm:ModDetailsViewModel"><views:ModDetailsView /></DataTemplate>
+    <DataTemplate DataType="vm:CommunityDetailsViewModel"><views:CommunityDetailsView /></DataTemplate>
+  </Window.DataTemplates>
+  <Grid RowDefinitions="Auto,*,Auto">
+    <TextBlock Classes="h2" Margin="20,16,20,8" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+    <ContentControl Grid.Row="1" Content="{Binding}" />
+    <Button Grid.Row="2" Margin="20,8,20,16" HorizontalAlignment="Right"
+            Content="{Binding Loc[button_close]}" Click="OnClose" />
+  </Grid>
+</Window>

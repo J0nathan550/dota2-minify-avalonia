@@ -298,18 +298,57 @@ public sealed partial class MainWindowViewModel(
         Pages.Add(ModsPage);
         Pages.Add(TerminalPage);
         Pages.Add(SettingsPage);
-        foreach (var plugin in await session.Backend.CallAsync<List<PluginInfo>>("get_plugins") ?? [])
-        {
-            // Built-in plugins have native pages; other plugins' web pages can't be shown.
-            if (plugin.Id == D2pfxPageViewModel.PluginId && images is not null)
-                Pages.Add(new D2pfxPageViewModel(session, images, ModsPage.LoadAsync));
-            else if (plugin.HasWebUi)
-                Pages.Add(new WebPluginPageViewModel(session, plugin.Id, plugin.Name));
-        }
+        _session = session;
         SelectedPage = ModsPage;
+        await RefreshPluginPagesAsync();
         OnPropertyChanged(nameof(ModsPage));
         OnPropertyChanged(nameof(TerminalPage));
         OnPropertyChanged(nameof(SettingsPage));
+    }
+
+    private const int FixedPageCount = 3; // Mods, Terminal, Settings
+    private AppSession? _session;
+
+    /// <summary>(Re)builds the plugin tabs, keeping pages that already exist so their state survives.</summary>
+    private async Task RefreshPluginPagesAsync()
+    {
+        var existing = Pages.Skip(FixedPageCount).ToDictionary(p => p.Id);
+        var plugins = await _session!.Backend.CallAsync<List<PluginInfo>>("get_plugins") ?? [];
+        var selected = SelectedPage;
+        while (Pages.Count > FixedPageCount)
+            Pages.RemoveAt(Pages.Count - 1);
+        foreach (var plugin in plugins)
+        {
+            if ((existing.GetValueOrDefault(plugin.Id) ?? CreatePluginPage(plugin)) is { } page)
+                Pages.Add(page);
+        }
+        SelectedPage = selected is not null && Pages.Contains(selected) ? selected : ModsPage;
+    }
+
+    /// <summary>Built-in plugins have native pages; other plugins' web pages can't be shown.</summary>
+    private PageViewModel? CreatePluginPage(PluginInfo plugin) => plugin.Id switch
+    {
+        D2pfxPageViewModel.PluginId when images is not null => new D2pfxPageViewModel(_session!, images, ModsPage!.LoadAsync),
+        CommunityPageViewModel.PluginId when images is not null => new CommunityPageViewModel(_session!, images, OnPackageChangedAsync),
+        _ when plugin.HasWebUi => new WebPluginPageViewModel(_session!, plugin.Id, plugin.Name),
+        _ => null,
+    };
+
+    /// <summary>A community package was installed, updated or removed.</summary>
+    private async Task OnPackageChangedAsync(string type)
+    {
+        switch (type)
+        {
+            case "mod" when ModsPage is not null:
+                await ModsPage.LoadAsync();
+                break;
+            case "theme":
+                await ApplyThemeAsync(null);
+                break;
+            case "plugin":
+                await RefreshPluginPagesAsync();
+                break;
+        }
     }
 
     private bool CanRunOperation() => !IsPatching;

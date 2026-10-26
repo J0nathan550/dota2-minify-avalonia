@@ -53,7 +53,7 @@ public sealed partial class ModsPageViewModel(AppSession session) : PageViewMode
     {
         var details = new ModDetailsViewModel(session, mod.Name);
         var load = details.LoadAsync();
-        await Task.WhenAll(load, session.Dialogs.ShowModDetailsAsync(details));
+        await Task.WhenAll(load, session.Dialogs.ShowDetailsAsync(details));
     }
 
     /// <summary>Card click: toggles the mod, or shows details for mods that can't be toggled.</summary>
