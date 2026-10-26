@@ -16,12 +16,13 @@ public enum BackendState
     Failed,
 }
 
-public sealed partial class MainWindowViewModel(DialogService dialogs) : ObservableObject, IAsyncDisposable
+public sealed partial class MainWindowViewModel(IDialogService dialogs, Func<Task<IBackend>> startBackend)
+    : ObservableObject, IAsyncDisposable
 {
     public const int ModsTab = 0;
     public const int TerminalTab = 1;
 
-    private BackendClient? _backend;
+    private IBackend? _backend;
     private bool _shuttingDown;
     private List<ModItemViewModel> _allMods = [];
 
@@ -67,7 +68,7 @@ public sealed partial class MainWindowViewModel(DialogService dialogs) : Observa
         State = BackendState.Starting;
         try
         {
-            _backend = await BackendClient.StartAsync(BackendCommand.Resolve());
+            _backend = await startBackend();
             _backend.RequestHandler = dialogs.HandleBackendRequestAsync;
             _backend.EventReceived += OnBackendEvent;
             _backend.Exited += OnBackendExited;
@@ -179,7 +180,7 @@ public sealed partial class MainWindowViewModel(DialogService dialogs) : Observa
         switch (name)
         {
             case "onLogReceived":
-                var entry = data.Deserialize<LogEntry>(BackendClient.Json);
+                var entry = data.Deserialize<LogEntry>(BackendJson.Options);
                 if (entry is { Type: "clear" })
                     Logs.Clear();
                 else if (entry is not null)

@@ -6,8 +6,16 @@ using Minify.Desktop.Views;
 
 namespace Minify.Desktop.Services;
 
+public interface IDialogService
+{
+    Task<object?> HandleBackendRequestAsync(string method, JsonElement parameters);
+    Task<string?> PickFolderAsync(string? title, string? initialDir = null);
+    Task AlertAsync(string title, string text, string msgType = "info");
+    Task<bool> ConfirmAsync(string title, string text);
+}
+
 /// <summary>Native dialogs, used by the UI and to answer the backend's ui.pick_* / ui.alert requests.</summary>
-public sealed partial class DialogService(Func<Window> owner)
+public sealed partial class DialogService(Func<Window> owner) : IDialogService
 {
     public async Task<object?> HandleBackendRequestAsync(string method, JsonElement p)
     {
@@ -87,7 +95,7 @@ public sealed partial class DialogService(Func<Window> owner)
             : null;
 
     /// <summary>pywebview-style filters: <c>"Font Files (*.ttf;*.otf)"</c>.</summary>
-    private static List<FilePickerFileType>? ParseFileTypes(JsonElement p)
+    internal static List<FilePickerFileType>? ParseFileTypes(JsonElement p)
     {
         if (p.ValueKind != JsonValueKind.Object || !p.TryGetProperty("file_types", out var types) ||
             types.ValueKind != JsonValueKind.Array)

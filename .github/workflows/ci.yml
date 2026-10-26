@@ -52,3 +52,29 @@ jobs:
 
       - name: Run Pytest
         run: uv run pytest
+
+  desktop-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: "3.13"
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Run desktop tests
+        run: dotnet test desktop/Minify.Desktop.slnx

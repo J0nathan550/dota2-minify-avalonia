@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Minify.Desktop.Backend;
 using Minify.Desktop.Services;
 using Minify.Desktop.ViewModels;
 using Minify.Desktop.Views;
@@ -16,7 +17,9 @@ public sealed class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var window = new MainWindow();
-            var viewModel = new MainWindowViewModel(new DialogService(() => window));
+            var viewModel = new MainWindowViewModel(
+                new DialogService(() => window),
+                async () => await BackendClient.StartAsync(BackendCommand.Resolve()));
             window.DataContext = viewModel;
             desktop.MainWindow = window;
             var backendStopped = false;

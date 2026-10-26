@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="Minify.Desktop.Tests/Minify.Desktop.Tests.csproj" />
   <Project Path="Minify.Desktop/Minify.Desktop.csproj" />
 </Solution>

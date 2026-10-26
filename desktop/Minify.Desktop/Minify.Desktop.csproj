@@ -17,6 +17,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Minify.Desktop.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AvaloniaResource Include="../../Minify/bin/images/favicon.ico" Link="Assets/favicon.ico" />
   </ItemGroup>
 
